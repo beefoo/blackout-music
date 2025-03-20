@@ -1,0 +1,62 @@
+:root {
+  --base-lightest: white;
+  --base-lighter: #d8dbde;
+  --base-light: #b6b9bc;
+  --base-dark: #5c5e5f;
+  --base-darker: #3b3c3d;
+  --base-darkest: #1b1b1c;
+  --primary-lightest: #f198ff;
+  --primary-lighter: #eb67ff;
+  --primary-light: #e538ff;
+  --primary-dark: #9328a4;
+  --primary-darker: #821193;
+  --primary-darkest: #6a007b;
+  --secondary-lightest: #ffedaa;
+  --secondary-lighter: #fbd754;
+  --secondary-light: #ffc800;
+  --secondary-dark: #bc9400;
+  --secondary-darker: #8e6f00;
+  --secondary-darkest: #755c00;
+}
+
+html {
+  font-size: 24px;
+  font-family: sans-serif;
+  color: var(--base-lightest);
+  background: var(--base-darkest);
+}
+
+a {
+  color: var(--primary-lighter);
+  font-weight: bold;
+}
+a:focus,
+button:focus {
+  outline-style: solid;
+  outline: var(--secondary-light);
+  outline-width: 3px;
+}
+
+button,
+a.button {
+  background: var(--primary-light);
+  color: var(--base-darkest);
+  border-radius: 6px;
+  border: none;
+  padding: 3px 6px;
+}
+
+p,
+li {
+  line-height: 1.8;
+}
+
+.visually-hidden {
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

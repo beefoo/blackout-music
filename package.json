@@ -1,0 +1,17 @@
+{
+  "name": "blackout-music",
+  "description": "Create new music by erasing old music",
+  "scripts": {
+    "lint": "./node_modules/.bin/eslint",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "eslint": "^8.2.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.30.0",
+    "prettier": "^3.5.3"
+  }
+}

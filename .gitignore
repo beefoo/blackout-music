@@ -1,0 +1,6 @@
+.DS_Store
+tmp/*
+node_modules/
+*.log
+package-lock.json
+s3_website.yml
