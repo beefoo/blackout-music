@@ -2,11 +2,13 @@
   "name": "blackout-music",
   "description": "Create new music by erasing old music",
   "scripts": {
-    "build-midi": "esbuild node_modules/@tonejs/midi/src/Midi.ts --bundle --outfile=public/js/vendor/tone-midi.js --format=esm",
-    "start": "node server.js"
+    "build-midi": "esbuild node_modules/@tonejs/midi/src/Midi.ts --bundle --outfile=public/js/vendor/Tone-midi.js --format=esm",
+    "start": "node server.js",
+    "build-tone": "esbuild node_modules/tone/build/esm/index.d.ts --bundle --outfile=public/js/vendor/Tone.js --format=esm"
   },
   "dependencies": {
     "express": "^4.21.2",
+    "tone": "^15.0.4",
     "@tonejs/midi": "^2.0.28"
   },
   "devDependencies": {
