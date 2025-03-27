@@ -1,5 +1,5 @@
 import { Midi as ToneMidi } from '../vendor/Tone-midi.js';
-import MusicHelper from './MusicHelper.js';
+import MathHelper from './MathHelper.js';
 import * as Tone from '../vendor/Tone.js';
 
 export default class Midi {
@@ -15,17 +15,23 @@ export default class Midi {
 
   init() {
     this.isPlaying = false;
+    this.isBusy = false;
     this.loadedMidi = false;
     this.startedAt = false;
+    this.state = false;
     this.ctx = this.options.audioContext || new AudioContext();
+
     this.$playButton = document.getElementById('toggle-play-button');
+    this.$resetButton = document.getElementById('reset-button');
+    this.$backwardButton = document.getElementById('backward-button');
+    this.$forwardButton = document.getElementById('forward-button');
 
     this.ctx.suspend();
     this.loadListeners();
   }
 
   isReady() {
-    return this.loadedMidi !== false;
+    return this.loadedMidi !== false && !this.isBusy;
   }
 
   async loadFromURL(url) {
@@ -58,6 +64,9 @@ export default class Midi {
 
   loadListeners() {
     this.$playButton.addEventListener('click', (_event) => this.togglePlay());
+    this.$resetButton.addEventListener('click', (_event) => this.reset());
+    this.$backwardButton.addEventListener('click', (_event) => this.skip(-5));
+    this.$forwardButton.addEventListener('click', (_event) => this.skip(5));
   }
 
   loadSynth() {
@@ -77,14 +86,28 @@ export default class Midi {
   }
 
   pause() {
+    if (!this.isReady()) return;
     this.isPlaying = false;
     this.ctx.suspend();
   }
 
   play() {
+    if (!this.isReady()) return;
     this.isPlaying = true;
     this.ctx.resume();
     if (!this.startedAt) this.onFirstStart();
+  }
+
+  reset() {
+    if (!this.isReady()) return;
+    this.isBusy = true;
+    if (this.state) {
+      this.state.tracks.forEach((_track, i) => {
+        this.state.tracks[i].currentIndex = 0;
+      });
+    }
+    this.startedAt = this.ctx.currentTime;
+    this.isBusy = false;
   }
 
   scheduleNote(note, secondsInTheFuture) {
@@ -92,6 +115,27 @@ export default class Midi {
     const future = now + Math.max(secondsInTheFuture, 0);
     // console.log(note.name, future);
     this.synth.triggerAttackRelease(note.name, note.duration, future);
+  }
+
+  skip(deltaSeconds) {
+    if (!this.isReady()) return;
+    this.isBusy = true;
+
+    const { state } = this;
+    const { duration, tracks } = this.loadedMidi;
+    const { currentTime } = this.ctx;
+
+    const elapsed = Math.max(currentTime - this.startedAt + deltaSeconds, 0);
+    const newTime = elapsed % duration;
+    this.startedAt = currentTime - newTime;
+
+    tracks.forEach((track, i) => {
+      let newIndex = track.notes.findIndex((note) => note.time > newTime);
+      newIndex = Math.max(newIndex, 0);
+      this.state.tracks[i].currentIndex = newIndex;
+    });
+
+    this.isBusy = false;
   }
 
   step() {
