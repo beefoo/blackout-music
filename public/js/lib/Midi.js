@@ -113,12 +113,12 @@ export default class Midi {
 
     if (this.recalculateTimeout === false) {
       this.recalculateNotes();
-      // wait some time before calculation
+      // wait some time before next calculation
       this.recalculateTimeout = setTimeout(() => {
         this.recalculateTimeout = false;
         if (this.queueRecalculation) {
-          this.recalculateNotes();
           this.queueRecalculation = false;
+          this.queueRecalculateNotes();
         }
       }, waitMs);
       return;
