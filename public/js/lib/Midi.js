@@ -51,12 +51,14 @@ export default class Midi {
     this.state = {
       bpm: Math.round(midi.header.tempos[0].bpm),
       durationTicks: midi.durationTicks,
-      tracks: midi.tracks.map((track) => {
+      tracks: midi.tracks.map((track, i) => {
         return {
           currentIndex: 0,
           noteCount: track.notes.length,
-          notes: track.notes.map((note) => {
+          notes: track.notes.map((note, j) => {
             return {
+              index: j,
+              track: i,
               active: true,
               originalTicks: note.ticks,
             };
@@ -127,24 +129,34 @@ export default class Midi {
   }
 
   recalculateNotes() {
-    const { state } = this;
-
-    state.tracks.forEach((track, i) => {
-      let offsetTicks = 0;
-      const { noteCount, notes } = track;
-      notes.forEach((note, j) => {
-        const { active, originalTicks } = note;
-        // offset time based on previously inactive notes
-        if (offsetTicks > 0) {
-          const newTicks = originalTicks - offsetTicks;
-          this.loadedMidi.tracks[i].notes[j].ticks = newTicks;
-        }
-        // increase offset of time if note is not active
-        if (!active && j < noteCount - 1) {
-          const nextNote = track.notes[j + 1];
-          offsetTicks += nextNote.originalTicks - originalTicks;
-        }
-      });
+    // get a flattened array of notes
+    const notes = this.state.tracks.map((track) => track.notes).flat();
+    // sort notes by ticks and whether they are active
+    notes.sort((a, b) => {
+      if (a.originalTicks === b.originalTicks) {
+        if (a.active) return -1;
+        else if (b.active) return 1;
+      } else return a.originalTicks - b.originalTicks;
+      return 0;
+    });
+    const noteCount = notes.length;
+    let offsetTicks = 0;
+    notes.forEach((note, index) => {
+      const { active, originalTicks } = note;
+      const i = note.track;
+      const j = note.index;
+      // offset time based on previously inactive notes
+      if (offsetTicks > 0) {
+        const newTicks = originalTicks - offsetTicks;
+        this.loadedMidi.tracks[i].notes[j].ticks = newTicks;
+      } else {
+        this.loadedMidi.tracks[i].notes[j].ticks = originalTicks;
+      }
+      // increase offset of time if note is not active
+      if (!active && index < noteCount - 1) {
+        const nextNote = notes[index + 1];
+        offsetTicks += nextNote.originalTicks - originalTicks;
+      }
     });
   }
 
