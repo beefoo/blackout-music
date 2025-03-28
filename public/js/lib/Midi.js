@@ -8,6 +8,7 @@ export default class Midi {
       audioContext: false,
       debug: false,
       latency: 0.1,
+      throttle: 0.3,
     };
     this.options = Object.assign(defaults, options);
     this.init();
@@ -19,6 +20,8 @@ export default class Midi {
     this.loadedMidi = false;
     this.startedAt = false;
     this.state = false;
+    this.recalculateTimeout = false;
+    this.queueRecalculation = false;
     this.ctx = this.options.audioContext || new AudioContext();
 
     this.$playButton = document.getElementById('toggle-play-button');
@@ -56,7 +59,6 @@ export default class Midi {
             return {
               active: true,
               originalTicks: note.ticks,
-              durationTicks: note.durationTicks,
             };
           }),
         };
@@ -101,6 +103,49 @@ export default class Midi {
     this.isPlaying = true;
     this.ctx.resume();
     if (!this.startedAt) this.onFirstStart();
+  }
+
+  queueRecalculateNotes() {
+    if (!this.isReady()) return;
+
+    // only recalculate notes at most once per every wait milliseconds
+    const waitMs = Math.round(this.options.throttle * 1000);
+
+    if (this.recalculateTimeout === false) {
+      this.recalculateNotes();
+      // wait some time before calculation
+      this.recalculateTimeout = setTimeout(() => {
+        this.recalculateTimeout = false;
+        if (this.queueRecalculation) {
+          this.recalculateNotes();
+          this.queueRecalculation = false;
+        }
+      }, waitMs);
+      return;
+    }
+    this.queueRecalculation = true;
+  }
+
+  recalculateNotes() {
+    const { state } = this;
+
+    state.tracks.forEach((track, i) => {
+      let offsetTicks = 0;
+      const { noteCount, notes } = track;
+      notes.forEach((note, j) => {
+        const { active, originalTicks } = note;
+        // offset time based on previously inactive notes
+        if (offsetTicks > 0) {
+          const newTicks = originalTicks - offsetTicks;
+          this.loadedMidi.tracks[i].notes[j].ticks = newTicks;
+        }
+        // increase offset of time if note is not active
+        if (!active && j < noteCount - 1) {
+          const nextNote = track.notes[j + 1];
+          offsetTicks += nextNote.originalTicks - originalTicks;
+        }
+      });
+    });
   }
 
   reset() {
@@ -205,6 +250,16 @@ export default class Midi {
         this.scheduleNote(item.note, item.secondsInTheFuture);
       });
     }
+  }
+
+  toggleNote(trackIndex, noteIndex) {
+    if (!this.isReady()) return;
+    const i = trackIndex;
+    const j = noteIndex;
+    const { active } = this.state.tracks[i].notes[j];
+    this.state.tracks[i].notes[j].active = !active;
+
+    this.queueRecalculateNotes();
   }
 
   togglePlay() {
