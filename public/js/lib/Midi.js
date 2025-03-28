@@ -25,6 +25,8 @@ export default class Midi {
     this.$resetButton = document.getElementById('reset-button');
     this.$backwardButton = document.getElementById('backward-button');
     this.$forwardButton = document.getElementById('forward-button');
+    this.$bpmDownButton = document.getElementById('bpm-down-button');
+    this.$bpmUpButton = document.getElementById('bpm-up-button');
 
     this.ctx.suspend();
     this.loadListeners();
@@ -44,6 +46,7 @@ export default class Midi {
     );
     // keep track of state
     this.state = {
+      bpm: Math.round(midi.header.tempos[0].bpm),
       durationTicks: midi.durationTicks,
       tracks: midi.tracks.map((track) => {
         return {
@@ -52,7 +55,7 @@ export default class Midi {
           notes: track.notes.map((note) => {
             return {
               active: true,
-              ticks: note.ticks,
+              originalTicks: note.ticks,
               durationTicks: note.durationTicks,
             };
           }),
@@ -67,6 +70,8 @@ export default class Midi {
     this.$resetButton.addEventListener('click', (_event) => this.reset());
     this.$backwardButton.addEventListener('click', (_event) => this.skip(-5));
     this.$forwardButton.addEventListener('click', (_event) => this.skip(5));
+    this.$bpmDownButton.addEventListener('click', (_event) => this.speed(-2));
+    this.$bpmUpButton.addEventListener('click', (_event) => this.speed(2));
   }
 
   loadSynth() {
@@ -121,7 +126,6 @@ export default class Midi {
     if (!this.isReady()) return;
     this.isBusy = true;
 
-    const { state } = this;
     const { duration, tracks } = this.loadedMidi;
     const { currentTime } = this.ctx;
 
@@ -135,6 +139,29 @@ export default class Midi {
       this.state.tracks[i].currentIndex = newIndex;
     });
 
+    this.isBusy = false;
+  }
+
+  speed(deltaBpm) {
+    if (!this.isReady()) return;
+    this.isBusy = true;
+    const { bpm } = this.state;
+    const { duration } = this.loadedMidi;
+    const { currentTime } = this.ctx;
+
+    const elapsed = currentTime - this.startedAt;
+    const time = elapsed % duration;
+    const progress = time / duration;
+
+    const newBpm = MathHelper.clamp(bpm + deltaBpm, 40, 240);
+    this.loadedMidi.header.setTempo(newBpm);
+    const newDuration = this.loadedMidi.duration;
+    const newTime = newDuration * progress;
+
+    console.log(`New BPM: ${newBpm}`);
+
+    this.startedAt = currentTime - newTime;
+    this.state.bpm = newBpm;
     this.isBusy = false;
   }
 
