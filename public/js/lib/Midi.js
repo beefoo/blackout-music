@@ -22,6 +22,7 @@ export default class Midi {
     this.state = false;
     this.recalculateTimeout = false;
     this.queueRecalculation = false;
+    this.lastScheduled = -1;
     this.ctx = this.options.audioContext || new AudioContext();
 
     this.$playButton = document.getElementById('toggle-play-button');
@@ -79,12 +80,27 @@ export default class Midi {
   }
 
   loadSynth() {
-    const filter = new Tone.Tremolo(9, 0.75).toDestination();
-    this.synth = new Tone.PolySynth(Tone.Synth, {
+    const effects = {};
+    effects.distortion = new Tone.Distortion({ distortion: 1, wet: 0.75 });
+    effects.reverb = new Tone.Reverb({ decay: 2.2, wet: 0.7 });
+    effects.limiter = new Tone.Limiter(-3);
+    effects.gain = new Tone.Gain(0.9).toDestination();
+    const effectChain = [
+      effects.distortion,
+      effects.reverb,
+      effects.limiter,
+      effects.gain,
+    ];
+    this.synth = new Tone.AMSynth({
       oscillator: {
-        partials: [0, 2, 3, 4],
+        type: 'amsquare',
+        modulationType: 'square',
       },
-    }).connect(filter);
+      modulation: {
+        type: 'square',
+      },
+    }).chain(...effectChain);
+    this.effects = effects;
   }
 
   onFirstStart() {
@@ -174,9 +190,13 @@ export default class Midi {
 
   scheduleNote(note, secondsInTheFuture) {
     const now = Tone.getContext().now();
-    const future = now + Math.max(secondsInTheFuture, 0);
+    let future = now + Math.max(secondsInTheFuture, 0);
+    const { lastScheduled } = this;
     // console.log(note.name, future);
+    if (future < lastScheduled) return; // we cannot schedule before the last scheduled note
+    if (future === lastScheduled) future += 0.01; // avoid scheduling at the same time
     this.synth.triggerAttackRelease(note.name, note.duration, future);
+    this.lastScheduled = future;
   }
 
   skip(deltaSeconds) {
