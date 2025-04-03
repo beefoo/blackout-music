@@ -81,13 +81,26 @@ export default class Midi {
 
   loadSynth() {
     const effects = {};
+    // add distortion and reverb
     effects.distortion = new Tone.Distortion({ distortion: 1, wet: 0.75 });
     effects.reverb = new Tone.Reverb({ decay: 2.2, wet: 0.7 });
+    // attenuate high notes
+    effects.lowpass = new Tone.Filter({ frequency: 'C6', type: 'lowpass' });
+    // boost low notes
+    effects.lowshelf = new Tone.Filter({
+      frequency: 'C4',
+      type: 'lowshelf',
+      gain: 6.0,
+    });
+    // avoid blowing out the audio
     effects.limiter = new Tone.Limiter(-3);
+    // avoid being too loud
     effects.gain = new Tone.Gain(0.9).toDestination();
     const effectChain = [
       effects.distortion,
       effects.reverb,
+      effects.lowpass,
+      effects.lowshelf,
       effects.limiter,
       effects.gain,
     ];
