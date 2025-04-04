@@ -13,10 +13,9 @@ export default class App {
 
   async init() {
     const { options } = this;
-    this.el = document.getElementById(options.el);
 
     const midi = new Midi();
-    const url = `${options.midiPath}${this.options.scores[0].mid}`;
+    const url = `${options.midiPath}${options.scores[5].id}.mid`;
     const loaded = await midi.loadFromURL(url);
   }
 }

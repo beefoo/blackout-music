@@ -29,8 +29,6 @@ export default class Midi {
     this.$resetButton = document.getElementById('reset-button');
     this.$backwardButton = document.getElementById('backward-button');
     this.$forwardButton = document.getElementById('forward-button');
-    this.$bpmDownButton = document.getElementById('bpm-down-button');
-    this.$bpmUpButton = document.getElementById('bpm-up-button');
 
     this.ctx.suspend();
     this.loadListeners();
@@ -75,8 +73,6 @@ export default class Midi {
     this.$resetButton.addEventListener('click', (_event) => this.reset());
     this.$backwardButton.addEventListener('click', (_event) => this.skip(-5));
     this.$forwardButton.addEventListener('click', (_event) => this.skip(5));
-    this.$bpmDownButton.addEventListener('click', (_event) => this.speed(-2));
-    this.$bpmUpButton.addEventListener('click', (_event) => this.speed(2));
   }
 
   loadSynth() {
