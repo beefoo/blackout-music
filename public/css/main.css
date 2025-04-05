@@ -111,6 +111,9 @@ li {
   border-bottom: 3px solid var(--base-darkest);
   background-color: rgba(255, 255, 255, 0.05);
 }
+.selector select {
+  text-align: center;
+}
 .composition-wrapper {
   flex-grow: 1;
   background-image: linear-gradient(

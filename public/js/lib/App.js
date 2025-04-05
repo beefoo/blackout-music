@@ -1,11 +1,10 @@
 import Midi from './Midi.js';
+import MidiSelector from './MidiSelector.js';
 
 export default class App {
   constructor(options = {}) {
     const defaults = {
-      el: 'app',
       debug: false,
-      midiPath: 'mid/',
     };
     this.options = Object.assign(defaults, options);
     this.init();
@@ -13,9 +12,18 @@ export default class App {
 
   async init() {
     const { options } = this;
+    const selector = new MidiSelector(
+      Object.assign(options, {
+        onSelectMidi: (url) => {
+          this.onSelectMidi(url);
+        },
+      }),
+    );
+    this.midi = new Midi(options);
+    selector.onSelect();
+  }
 
-    const midi = new Midi();
-    const url = `${options.midiPath}${options.scores[5].id}.mid`;
-    const loaded = await midi.loadFromURL(url);
+  onSelectMidi(url) {
+    this.midi.loadFromURL(url);
   }
 }

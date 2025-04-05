@@ -1,6 +1,6 @@
 import { Midi as ToneMidi } from '../vendor/Tone-midi.js';
 import MathHelper from './MathHelper.js';
-import * as Tone from '../vendor/Tone.js';
+import Synth from './Synth.js';
 
 export default class Midi {
   constructor(options = {}) {
@@ -22,8 +22,8 @@ export default class Midi {
     this.state = false;
     this.recalculateTimeout = false;
     this.queueRecalculation = false;
-    this.lastScheduled = -1;
     this.ctx = this.options.audioContext || new AudioContext();
+    this.synth = new Synth();
 
     this.$playButton = document.getElementById('toggle-play-button');
     this.$resetButton = document.getElementById('reset-button');
@@ -39,6 +39,7 @@ export default class Midi {
   }
 
   async loadFromURL(url) {
+    this.isBusy = true;
     const midi = await ToneMidi.fromUrl(url);
     console.log(midi);
     this.loadedMidi = midi;
@@ -65,6 +66,8 @@ export default class Midi {
         };
       }),
     };
+    if (this.isPlaying) this.startedAt = this.ctx.currentTime;
+    this.isBusy = false;
     return true;
   }
 
@@ -75,47 +78,8 @@ export default class Midi {
     this.$forwardButton.addEventListener('click', (_event) => this.skip(5));
   }
 
-  loadSynth() {
-    const effects = {};
-    // add distortion
-    // effects.distortion = new Tone.Distortion({ distortion: 0.5, wet: 0.5 });
-    // add reverb
-    effects.reverb = new Tone.Reverb({ decay: 2, wet: 0.667 });
-    // attenuate high notes
-    effects.lowpass = new Tone.Filter({ frequency: 'C6', type: 'lowpass' });
-    // boost low notes
-    effects.lowshelf = new Tone.Filter({
-      frequency: 'C4',
-      type: 'lowshelf',
-      gain: 6.0,
-    });
-    // avoid blowing out the audio
-    effects.limiter = new Tone.Limiter(-3);
-    // avoid being too loud
-    effects.gain = new Tone.Gain(0.9).toDestination();
-    const effectChain = [
-      // effects.distortion,
-      effects.reverb,
-      effects.lowpass,
-      effects.lowshelf,
-      effects.limiter,
-      effects.gain,
-    ];
-    this.synth = new Tone.PolySynth(Tone.AMSynth, {
-      oscillator: {
-        type: 'amsquare',
-        modulationType: 'square',
-      },
-      modulation: {
-        type: 'square',
-      },
-    }).chain(...effectChain);
-    this.effects = effects;
-  }
-
   onFirstStart() {
-    Tone.start();
-    this.loadSynth();
+    this.synth.load();
     this.startedAt = this.ctx.currentTime;
     this.step();
   }
@@ -199,14 +163,7 @@ export default class Midi {
   }
 
   scheduleNote(note, secondsInTheFuture) {
-    const now = Tone.getContext().now();
-    let future = now + Math.max(secondsInTheFuture, 0);
-    const { lastScheduled } = this;
-    // console.log(note.name, future);
-    if (future < lastScheduled) return; // we cannot schedule before the last scheduled note
-    // if (future === lastScheduled) future += 0.01; // avoid scheduling at the same time
-    this.synth.triggerAttackRelease(note.name, note.duration, future);
-    this.lastScheduled = future;
+    this.synth.play(note, secondsInTheFuture);
   }
 
   skip(deltaSeconds) {

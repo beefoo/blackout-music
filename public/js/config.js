@@ -56,7 +56,7 @@ const config = {
     },
     {
       id: 'bach_well_tempered_clavier',
-      title: 'The Well-Tempered Clavier, Prelude and Fugue in C major',
+      title: 'The Well-Tempered Clavier',
       alt: '',
       creator: 'Johann Sebastian Bach',
       date: '1722',
