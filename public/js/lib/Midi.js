@@ -77,9 +77,10 @@ export default class Midi {
 
   loadSynth() {
     const effects = {};
-    // add distortion and reverb
-    effects.distortion = new Tone.Distortion({ distortion: 1, wet: 0.75 });
-    effects.reverb = new Tone.Reverb({ decay: 2.2, wet: 0.7 });
+    // add distortion
+    // effects.distortion = new Tone.Distortion({ distortion: 0.5, wet: 0.5 });
+    // add reverb
+    effects.reverb = new Tone.Reverb({ decay: 2, wet: 0.667 });
     // attenuate high notes
     effects.lowpass = new Tone.Filter({ frequency: 'C6', type: 'lowpass' });
     // boost low notes
@@ -93,14 +94,14 @@ export default class Midi {
     // avoid being too loud
     effects.gain = new Tone.Gain(0.9).toDestination();
     const effectChain = [
-      effects.distortion,
+      // effects.distortion,
       effects.reverb,
       effects.lowpass,
       effects.lowshelf,
       effects.limiter,
       effects.gain,
     ];
-    this.synth = new Tone.AMSynth({
+    this.synth = new Tone.PolySynth(Tone.AMSynth, {
       oscillator: {
         type: 'amsquare',
         modulationType: 'square',
@@ -203,7 +204,7 @@ export default class Midi {
     const { lastScheduled } = this;
     // console.log(note.name, future);
     if (future < lastScheduled) return; // we cannot schedule before the last scheduled note
-    if (future === lastScheduled) future += 0.01; // avoid scheduling at the same time
+    // if (future === lastScheduled) future += 0.01; // avoid scheduling at the same time
     this.synth.triggerAttackRelease(note.name, note.duration, future);
     this.lastScheduled = future;
   }
