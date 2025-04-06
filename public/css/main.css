@@ -35,8 +35,10 @@ a {
   color: var(--primary-lighter);
   font-weight: bold;
 }
-a:focus,
-button:focus {
+a:hover {
+  color: var(--secondary-light);
+}
+a:focus {
   outline-style: solid;
   outline: var(--secondary-light);
   outline-width: 3px;
@@ -47,9 +49,28 @@ a.button {
   background: var(--primary-light);
   color: var(--base-darkest);
   border-radius: 6px;
-  border: none;
+  border: 4px solid var(--primary-light);
   padding: 3px 6px;
+  margin: 0;
   line-height: 1;
+  display: block;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+button.selected,
+a.button.selected {
+  background: var(--base-darker);
+  color: var(--primary-lighter);
+  border: 3px solid var(--primary-light);
+}
+a.button:focus,
+a.button:focus-visible,
+button:focus,
+button:focus-visible,
+a.button:hover,
+button:hover {
+  outline: none;
+  border-color: var(--secondary-light);
 }
 
 p,
@@ -99,7 +120,7 @@ li {
   flex-direction: column;
   border-radius: 12px;
 
-  border: 3px solid var(--secondary-light);
+  border: 3px solid var(--base-dark);
   box-sizing: border-box;
   margin: 12px 12px 0;
 }
@@ -107,12 +128,13 @@ li {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-bottom: 12px;
+  padding: 0 12px 12px;
   border-bottom: 3px solid var(--base-darkest);
   background-color: rgba(255, 255, 255, 0.05);
 }
 .selector select {
   text-align: center;
+  max-width: 100%;
 }
 .composition-wrapper {
   flex-grow: 1;
@@ -129,6 +151,10 @@ li {
   background-size: 16px 16px;
   border-bottom-left-radius: 12px;
   border-bottom-right-radius: 12px;
+  cursor:
+    url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' version='1.1' viewBox='0 0 32 32' width='32' height='32'%3e%3cpath d='M0,5v.3c0,0,2.4,8.6,2.4,8.6,0,.1.1.3.2.4l12.6,13.3c.2.2.4.3.7.3h15.3c0,0,.1,0,.2,0,.4-.1.7-.5.5-.9l-2.4-8.9c0,0,0-.1,0-.2h0s-.1-.2-.1-.2l-12.9-13.6h0c-.1,0-.2,0-.4,0H.8c-.2,0-.5.1-.6.3-.1.2-.2.4-.1.7ZM28.2,19l2,7.4h-13.7s-2-7.4-2-7.4h13.7ZM2.4,5.6h13.3s11.3,12,11.3,12h-13.3S2.4,5.6,2.4,5.6h0Z' fill='%23eb67ff'/%3e%3c/svg%3e")
+      16 16,
+    pointer;
 }
 
 .controls {
