@@ -41,6 +41,12 @@ export default class Synth {
       effects.gain,
     ];
     this.synth = new Tone.PolySynth(Tone.AMSynth, {
+      envelope: {
+        attack: 0.02, // 0 - 2, default: 0.01
+        decay: 0.2, // 0 - 2, default: 0.1
+        sustain: 0.25, // 0 - 1, default: 1
+        release: 5, // 0 - 5, default: 0.5
+      },
       oscillator: {
         type: 'amsquare',
         modulationType: 'square',
