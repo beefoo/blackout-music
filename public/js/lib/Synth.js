@@ -1,3 +1,4 @@
+import MathHelper from './MathHelper.js';
 import * as Tone from '../vendor/Tone.js';
 
 export default class Synth {
@@ -28,9 +29,9 @@ export default class Synth {
       gain: 6.0,
     });
     // avoid blowing out the audio
-    effects.limiter = new Tone.Limiter(-3);
+    effects.limiter = new Tone.Limiter(-6);
     // avoid being too loud
-    effects.gain = new Tone.Gain(0.9).toDestination();
+    effects.gain = new Tone.Gain(0.8).toDestination();
     const effectChain = [
       // effects.distortion,
       effects.reverb,
@@ -57,7 +58,12 @@ export default class Synth {
     let future = now + Math.max(secondsInTheFuture, 0);
     const { lastScheduled } = this;
     if (future < lastScheduled) return; // we cannot schedule before the last scheduled note
-    this.synth.triggerAttackRelease(note.name, note.duration, future);
+
+    const { name, duration } = note;
+    // make longer notes have lower velocity
+    let velocity = duration > 1 ? Math.pow(duration, -0.5) : 1;
+    velocity = MathHelper.clamp(velocity, 0.5, 1);
+    this.synth.triggerAttackRelease(name, duration, future, velocity);
     this.lastScheduled = future;
   }
 }
