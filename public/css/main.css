@@ -97,13 +97,13 @@ li {
 .header h1,
 .header h2 {
   margin: 0;
-  line-height: 1;
+  color: var(--base-light);
 }
 .header h1 {
   font-size: 1.1rem;
 }
 .header h2 {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: normal;
   flex-grow: 1;
   margin-left: 6px;

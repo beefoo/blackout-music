@@ -47,7 +47,7 @@ const config = {
     },
     {
       id: 'chopin_nocturne_op9_no2',
-      title: 'Nocturne in E-flat major, Op. 9, No. 2',
+      title: 'Nocturne in E-flat major',
       alt: '',
       creator: 'Frédéric Chopin',
       date: '1832',
