@@ -18,10 +18,11 @@ export default class Midi {
     this.isPlaying = false;
     this.isBusy = false;
     this.loadedMidi = false;
-    this.startedAt = false;
+    this.startedAt = 0;
     this.state = false;
     this.recalculateTimeout = false;
     this.queueRecalculation = false;
+    this.firstStarted = false;
     this.ctx = this.options.audioContext || new AudioContext();
     this.synth = new Synth();
 
@@ -67,6 +68,7 @@ export default class Midi {
       }),
     };
     if (this.isPlaying) this.startedAt = this.ctx.currentTime;
+    else this.startedAt = 0;
     this.isBusy = false;
     return true;
   }
@@ -79,6 +81,7 @@ export default class Midi {
   }
 
   onFirstStart() {
+    this.firstStarted = true;
     this.synth.load();
     this.startedAt = this.ctx.currentTime;
     this.step();
@@ -94,7 +97,8 @@ export default class Midi {
     if (!this.isReady()) return;
     this.isPlaying = true;
     this.ctx.resume();
-    if (!this.startedAt) this.onFirstStart();
+    if (!this.firstStarted) this.onFirstStart();
+    else if (!this.startedAt) this.startedAt = this.ctx.currentTime;
   }
 
   queueRecalculateNotes() {
@@ -152,13 +156,14 @@ export default class Midi {
 
   reset() {
     if (!this.isReady()) return;
+    if (!this.firstStarted) return;
     this.isBusy = true;
     if (this.state) {
       this.state.tracks.forEach((_track, i) => {
         this.state.tracks[i].currentIndex = 0;
       });
     }
-    this.startedAt = this.ctx.currentTime;
+    this.startedAt = this.isPlaying ? this.ctx.currentTime : false;
     this.isBusy = false;
   }
 
@@ -168,6 +173,8 @@ export default class Midi {
 
   skip(deltaSeconds) {
     if (!this.isReady()) return;
+    if (!this.firstStarted) return;
+
     this.isBusy = true;
 
     const { duration, tracks } = this.loadedMidi;
@@ -234,9 +241,9 @@ export default class Midi {
         const secondsInTheFuture = scheduleSeconds - note.time;
         if (!noteState.active) index += 1;
         else if (secondsInTheFuture >= 0) {
+          index += 1;
           if (secondsInTheFuture > latency) break;
           queue.push({ note, secondsInTheFuture });
-          index += 1;
         } else break;
       }
       this.state.tracks[i].currentIndex = index;

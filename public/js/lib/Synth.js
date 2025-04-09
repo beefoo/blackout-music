@@ -11,10 +11,12 @@ export default class Synth {
   }
 
   init() {
+    this.loaded = false;
     this.lastScheduled = -1;
   }
 
   load() {
+    if (this.loaded) return;
     const effects = {};
     // add distortion
     // effects.distortion = new Tone.Distortion({ distortion: 0.5, wet: 0.5 });
@@ -57,6 +59,7 @@ export default class Synth {
     }).chain(...effectChain);
     this.effects = effects;
     Tone.start();
+    this.loaded = true;
   }
 
   play(note, secondsInTheFuture) {
