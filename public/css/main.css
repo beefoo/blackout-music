@@ -38,9 +38,12 @@ a {
 a:hover {
   color: var(--secondary-light);
 }
-a:focus {
+a:focus,
+a:focus-visible,
+select:focus,
+select:focus-visible {
   outline-style: solid;
-  outline: var(--secondary-light);
+  outline-color: var(--secondary-light);
   outline-width: 3px;
 }
 
