@@ -169,6 +169,7 @@ li {
 }
 .controls button {
   padding: 6px;
+  position: relative;
 }
 .controls button svg {
   width: 40px;
@@ -185,6 +186,19 @@ li {
 }
 #toggle-play-button.playing .pause-icon {
   display: block;
+}
+#backward-button .number,
+#forward-button .number {
+  font-size: 0.8rem;
+  position: absolute;
+  bottom: 2px;
+  font-weight: bold;
+}
+#backward-button .number {
+  left: 8px;
+}
+#forward-button .number {
+  right: 8px;
 }
 
 .visually-hidden {
