@@ -45,7 +45,7 @@ export default class Synth {
         attack: 0.02, // 0 - 2, default: 0.01
         decay: 0.2, // 0 - 2, default: 0.1
         sustain: 0.25, // 0 - 1, default: 1
-        release: 5, // 0 - 5, default: 0.5
+        release: 1, // 0 - 5, default: 0.5
       },
       oscillator: {
         type: 'amsquare',
@@ -69,6 +69,7 @@ export default class Synth {
     // make longer notes have lower velocity
     let velocity = duration > 1 ? Math.pow(duration, -0.5) : 1;
     velocity = MathHelper.clamp(velocity, 0.5, 1);
+    // console.log(this.synth.activeVoices);
     this.synth.triggerAttackRelease(name, duration, future, velocity);
     this.lastScheduled = future;
   }
