@@ -168,9 +168,17 @@ li {
   width: 40px;
   height: 40px;
 }
-.controls #toggle-play-button svg {
+#toggle-play-button svg {
   width: 60px;
   height: 60px;
+  display: block;
+}
+#toggle-play-button .pause-icon,
+#toggle-play-button.playing .play-icon {
+  display: none;
+}
+#toggle-play-button.playing .pause-icon {
+  display: block;
 }
 
 .visually-hidden {
