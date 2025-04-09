@@ -91,6 +91,7 @@ export default class Midi {
     if (!this.isReady()) return;
     this.isPlaying = false;
     this.ctx.suspend();
+    this.synth.pause();
   }
 
   play() {

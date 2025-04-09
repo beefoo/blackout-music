@@ -62,6 +62,10 @@ export default class Synth {
     this.loaded = true;
   }
 
+  pause() {
+    this.synth.releaseAll();
+  }
+
   play(note, secondsInTheFuture) {
     const now = Tone.getContext().now();
     let future = now + Math.max(secondsInTheFuture, 0);
