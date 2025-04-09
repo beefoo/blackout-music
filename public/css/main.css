@@ -164,14 +164,17 @@ li {
   gap: 12px;
   padding: 12px;
 }
+.controls button {
+  padding: 6px;
+}
 .controls button svg {
   width: 40px;
   height: 40px;
+  display: block;
 }
 #toggle-play-button svg {
   width: 60px;
   height: 60px;
-  display: block;
 }
 #toggle-play-button .pause-icon,
 #toggle-play-button.playing .play-icon {
