@@ -44,10 +44,34 @@ export default class Midi {
     const midi = await ToneMidi.fromUrl(url);
     console.log(midi);
     this.loadedMidi = midi;
-    const measures = midi.header.ticksToMeasures(midi.durationTicks);
-    console.log(
-      `Duration: ${midi.duration}s, ${midi.durationTicks} ticks, ${measures} measures`,
+
+    // make some calculations
+    this.measureCount = Math.ceil(
+      midi.header.ticksToMeasures(midi.durationTicks),
     );
+    this.ticksPerQNote = midi.header.ppq;
+    this.ticksPerMeasure = this.ticksPerQNote * 4;
+    const midiNotes = midi.tracks
+      .map((track) => track.notes.map((note) => note.midi))
+      .flat();
+    const durTicks = midi.tracks
+      .map((track) =>
+        track.notes.map(
+          (note) => (note.durationTicks / midi.header.ppq) * 0.25,
+        ),
+      )
+      .flat();
+    this.minMidiNote = MathHelper.minList(midiNotes);
+    this.maxMidiNote = MathHelper.maxList(midiNotes);
+    this.midiNoteRows = this.maxMidiNote - this.minMidiNote + 1;
+    // this.minMidiDurTicks = MathHelper.minList(durTicks);
+    // this.maxMidiDurTicks = MathHelper.maxList(durTicks);
+    console.log(`Duration: ${midi.duration}s, Measures: ${this.measureCount}`);
+    console.log(`Midi note rows: ${this.midiNoteRows}`);
+    // console.log(
+    //   `Dur tick range: ${this.minMidiDurTicks} - ${this.maxMidiDurTicks}`,
+    // );
+
     // keep track of state
     this.state = {
       bpm: Math.round(midi.header.tempos[0].bpm),
@@ -58,6 +82,8 @@ export default class Midi {
           noteCount: track.notes.length,
           notes: track.notes.map((note, j) => {
             return {
+              id: `note-${i}-${j}`,
+              row: note.midi - this.minMidiNote,
               index: j,
               track: i,
               active: true,
