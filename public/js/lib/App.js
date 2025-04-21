@@ -20,9 +20,30 @@ export default class App {
         },
       }),
     );
-    this.midi = new Midi(options);
-    this.ui = new MidiUI(options);
+    this.midi = new Midi(
+      Object.assign(options, {
+        onPlayNote: (note, noteState) => {
+          this.onPlayNote(note, noteState);
+        },
+      }),
+    );
+    this.ui = new MidiUI(
+      Object.assign(options, {
+        onChangePage: () => {
+          this.onChangePage();
+        },
+      }),
+    );
     selector.onSelect();
+  }
+
+  onChangePage() {
+    const { tickStart, tickEnd } = this.ui;
+    this.midi.setBounds(tickStart, tickEnd);
+  }
+
+  onPlayNote(note, noteState) {
+    this.ui.highlight(note, noteState);
   }
 
   async onSelectMidi(url) {

@@ -5,7 +5,8 @@ export default class MidiUI {
     const defaults = {
       debug: false,
       el: 'composition',
-      measuresPerPage: 8,
+      measuresPerPage: 4,
+      onChangePage: () => {},
       segmentsPerQuarterNote: 4, // 2 = 1/8th, 4 = 1/16th, 8 = 1/32nd
     };
     this.options = Object.assign(defaults, options);
@@ -17,9 +18,28 @@ export default class MidiUI {
     this.loadListeners();
   }
 
+  highlight(note, noteState) {
+    const $el = document.getElementById(noteState.id);
+    const { duration } = note;
+    const { children } = $el;
+    const count = children.length;
+    const step = Math.round((duration / count) * 1000);
+    for (let i = 0; i < count; i++) {
+      const $child = $el.children[i];
+      const delay = i * step;
+      setTimeout(() => {
+        $child.classList.remove('highlight');
+        setTimeout(() => {
+          $child.classList.add('highlight');
+        }, 1);
+      }, delay);
+    }
+  }
+
   load(midi) {
     const { measuresPerPage, segmentsPerQuarterNote } = this.options;
     this.midi = midi;
+    this.page = 0;
     this.pageCount = Math.ceil((1.0 * midi.measureCount) / measuresPerPage);
     this.ticksPerCell = midi.ticksPerQNote / segmentsPerQuarterNote;
     this.cellsPerPage = segmentsPerQuarterNote * 4 * measuresPerPage;
@@ -27,17 +47,24 @@ export default class MidiUI {
     this.cellW = 100.0 / this.cellsPerPage;
     this.cellH = 100.0 / midi.midiNoteRows;
     console.log(`Pages: ${this.pageCount}`);
-    this.render(0);
+    this.loadPage(this.page);
   }
 
   loadListeners() {}
 
-  render(page) {
-    const { midi, $el, ticksPerCell, cellsPerPage, cellW, cellH } = this;
+  loadPage(page) {
     const { measuresPerPage } = this.options;
-    const { ticksPerMeasure, loadedMidi, state } = midi;
-    const tickStart = page * measuresPerPage * ticksPerMeasure;
-    const tickEnd = (page + 1) * measuresPerPage * ticksPerMeasure;
+    const { ticksPerMeasure } = this.midi;
+    this.tickStart = page * measuresPerPage * ticksPerMeasure;
+    this.tickEnd = (page + 1) * measuresPerPage * ticksPerMeasure;
+    this.render();
+    this.options.onChangePage();
+  }
+
+  render() {
+    const { midi, $el, ticksPerCell, cellsPerPage, cellH, tickStart, tickEnd } =
+      this;
+    const { loadedMidi, state } = midi;
 
     let html = '';
     loadedMidi.tracks.forEach((track, i) => {

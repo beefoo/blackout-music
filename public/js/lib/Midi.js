@@ -8,6 +8,7 @@ export default class Midi {
       audioContext: false,
       debug: false,
       latency: 0.1,
+      onPlayNote: (note, noteState) => {},
       throttle: 0.3,
     };
     this.options = Object.assign(defaults, options);
@@ -54,13 +55,13 @@ export default class Midi {
     const midiNotes = midi.tracks
       .map((track) => track.notes.map((note) => note.midi))
       .flat();
-    const durTicks = midi.tracks
-      .map((track) =>
-        track.notes.map(
-          (note) => (note.durationTicks / midi.header.ppq) * 0.25,
-        ),
-      )
-      .flat();
+    // const durTicks = midi.tracks
+    //   .map((track) =>
+    //     track.notes.map(
+    //       (note) => (note.durationTicks / midi.header.ppq) * 0.25,
+    //     ),
+    //   )
+    //   .flat();
     this.minMidiNote = MathHelper.minList(midiNotes);
     this.maxMidiNote = MathHelper.maxList(midiNotes);
     this.midiNoteRows = this.maxMidiNote - this.minMidiNote + 1;
@@ -75,10 +76,13 @@ export default class Midi {
     // keep track of state
     this.state = {
       bpm: Math.round(midi.header.tempos[0].bpm),
+      duration: midi.duration,
       durationTicks: midi.durationTicks,
       tracks: midi.tracks.map((track, i) => {
         return {
           currentIndex: 0,
+          indexStart: 0,
+          indexEnd: track.notes.length - 1,
           noteCount: track.notes.length,
           notes: track.notes.map((note, j) => {
             return {
@@ -115,6 +119,7 @@ export default class Midi {
 
   pause() {
     if (!this.isReady()) return;
+    document.body.classList.remove('playing');
     this.isPlaying = false;
     this.ctx.suspend();
     this.synth.pause();
@@ -122,6 +127,7 @@ export default class Midi {
 
   play() {
     if (!this.isReady()) return;
+    document.body.classList.add('playing');
     this.isPlaying = true;
     this.ctx.resume();
     if (!this.firstStarted) this.onFirstStart();
@@ -186,16 +192,43 @@ export default class Midi {
     if (!this.firstStarted) return;
     this.isBusy = true;
     if (this.state) {
-      this.state.tracks.forEach((_track, i) => {
-        this.state.tracks[i].currentIndex = 0;
+      this.state.tracks.forEach((track, i) => {
+        this.state.tracks[i].currentIndex = track.indexStart;
       });
     }
     this.startedAt = this.isPlaying ? this.ctx.currentTime : false;
     this.isBusy = false;
   }
 
-  scheduleNote(note, secondsInTheFuture) {
+  scheduleNote(note, state, secondsInTheFuture) {
     this.synth.play(note, secondsInTheFuture);
+    setTimeout(
+      () => {
+        this.options.onPlayNote(note, state);
+      },
+      Math.round(secondsInTheFuture * 1000),
+    );
+  }
+
+  setBounds(tickStart, tickEnd) {
+    const { tracks } = this.state;
+    tracks.forEach((track, i) => {
+      const indexStart = track.notes.findIndex(
+        (note) => note.originalTicks >= tickStart,
+      );
+      const indexEnd = track.notes.findIndex(
+        (note) => note.originalTicks >= tickEnd,
+      );
+      this.state.tracks[i].indexStart = indexStart;
+      this.state.tracks[i].indexEnd = indexEnd;
+      this.state.tracks[i].currentIndex = indexStart;
+    });
+    this.state.duration = this.loadedMidi.header.ticksToSeconds(
+      tickEnd - tickStart,
+    );
+    console.log(
+      `Set bounds [${tickStart}, ${tickEnd}] with duration ${this.state.duration}`,
+    );
   }
 
   skip(deltaSeconds) {
@@ -212,7 +245,10 @@ export default class Midi {
     this.startedAt = currentTime - newTime;
 
     tracks.forEach((track, i) => {
-      let newIndex = track.notes.findIndex((note) => note.time > newTime);
+      const { indexStart, indexEnd } = this.state.tracks[i];
+      let newIndex = track.notes.findIndex(
+        (note, j) => note.time > newTime && j >= indexStart && j < indexEnd,
+      );
       newIndex = Math.max(newIndex, 0);
       this.state.tracks[i].currentIndex = newIndex;
     });
@@ -248,29 +284,34 @@ export default class Midi {
     if (!this.isPlaying || !this.isReady()) return;
     const { state } = this;
     const { latency } = this.options;
-    const { duration, tracks } = this.loadedMidi;
+    const { tracks } = this.loadedMidi;
+    const { duration } = this.state;
 
     const elapsed = this.ctx.currentTime - this.startedAt;
-    const scheduleSeconds = (elapsed + latency) % duration;
+    let scheduleSeconds = (elapsed + latency) % duration;
 
     // build a queue of notes to play in the future
     const queue = [];
     tracks.forEach((track, i) => {
-      const { currentIndex, noteCount, notes } = state.tracks[i];
+      const { currentIndex, indexStart, indexEnd, notes } = state.tracks[i];
       let index = currentIndex;
       while (true) {
-        if (index >= noteCount) {
-          console.log(`Reset track ${i + 1}`, scheduleSeconds);
-          index = 0;
+        if (index >= indexEnd) {
+          console.log(
+            `Reset track ${i + 1} to index ${indexStart}`,
+            scheduleSeconds,
+          );
+          index = indexStart;
         }
         const note = track.notes[index];
         const noteState = notes[index];
         const secondsInTheFuture = scheduleSeconds - note.time;
         if (!noteState.active) index += 1;
-        else if (secondsInTheFuture >= 0) {
+        else if (secondsInTheFuture > latency) {
+          break;
+        } else if (secondsInTheFuture >= 0) {
           index += 1;
-          if (secondsInTheFuture > latency) break;
-          queue.push({ note, secondsInTheFuture });
+          queue.push({ note, noteState, secondsInTheFuture });
         } else break;
       }
       this.state.tracks[i].currentIndex = index;
@@ -280,7 +321,7 @@ export default class Midi {
     if (queue.length > 0) {
       queue.sort((a, b) => a.secondsInTheFuture - b.secondsInTheFuture);
       queue.forEach((item) => {
-        this.scheduleNote(item.note, item.secondsInTheFuture);
+        this.scheduleNote(item.note, item.noteState, item.secondsInTheFuture);
       });
     }
   }
