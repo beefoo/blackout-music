@@ -76,6 +76,7 @@ export default class Midi {
     // keep track of state
     this.state = {
       bpm: Math.round(midi.header.tempos[0].bpm),
+      start: 0,
       duration: midi.duration,
       durationTicks: midi.durationTicks,
       tracks: midi.tracks.map((track, i) => {
@@ -212,6 +213,7 @@ export default class Midi {
 
   setBounds(tickStart, tickEnd) {
     const { tracks } = this.state;
+    const time = this.loadedMidi.header;
     tracks.forEach((track, i) => {
       const indexStart = track.notes.findIndex(
         (note) => note.originalTicks >= tickStart,
@@ -223,12 +225,8 @@ export default class Midi {
       this.state.tracks[i].indexEnd = indexEnd;
       this.state.tracks[i].currentIndex = indexStart;
     });
-    this.state.duration = this.loadedMidi.header.ticksToSeconds(
-      tickEnd - tickStart,
-    );
-    console.log(
-      `Set bounds [${tickStart}, ${tickEnd}] with duration ${this.state.duration}`,
-    );
+    this.state.duration = time.ticksToSeconds(tickEnd - tickStart);
+    this.state.start = time.ticksToSeconds(tickStart);
   }
 
   skip(deltaSeconds) {
@@ -237,7 +235,8 @@ export default class Midi {
 
     this.isBusy = true;
 
-    const { duration, tracks } = this.loadedMidi;
+    const { tracks } = this.loadedMidi;
+    const { duration, start } = this.state;
     const { currentTime } = this.ctx;
 
     const elapsed = Math.max(currentTime - this.startedAt + deltaSeconds, 0);
@@ -247,7 +246,8 @@ export default class Midi {
     tracks.forEach((track, i) => {
       const { indexStart, indexEnd } = this.state.tracks[i];
       let newIndex = track.notes.findIndex(
-        (note, j) => note.time > newTime && j >= indexStart && j < indexEnd,
+        (note, j) =>
+          note.time > newTime + start && j >= indexStart && j < indexEnd,
       );
       newIndex = Math.max(newIndex, 0);
       this.state.tracks[i].currentIndex = newIndex;
@@ -285,7 +285,7 @@ export default class Midi {
     const { state } = this;
     const { latency } = this.options;
     const { tracks } = this.loadedMidi;
-    const { duration } = this.state;
+    const { start, duration } = this.state;
 
     const elapsed = this.ctx.currentTime - this.startedAt;
     let scheduleSeconds = (elapsed + latency) % duration;
@@ -305,7 +305,7 @@ export default class Midi {
         }
         const note = track.notes[index];
         const noteState = notes[index];
-        const secondsInTheFuture = scheduleSeconds - note.time;
+        const secondsInTheFuture = start + scheduleSeconds - note.time;
         if (!noteState.active) index += 1;
         else if (secondsInTheFuture > latency) {
           break;
