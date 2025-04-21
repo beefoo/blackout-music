@@ -19,7 +19,7 @@ export default class Midi {
     this.isPlaying = false;
     this.isBusy = false;
     this.loadedMidi = false;
-    this.startedAt = 0;
+    this.startedAt = false;
     this.state = false;
     this.recalculateTimeout = false;
     this.queueRecalculation = false;
@@ -132,7 +132,7 @@ export default class Midi {
     this.isPlaying = true;
     this.ctx.resume();
     if (!this.firstStarted) this.onFirstStart();
-    else if (!this.startedAt) this.startedAt = this.ctx.currentTime;
+    else if (this.startedAt === false) this.startedAt = this.ctx.currentTime;
   }
 
   queueRecalculateNotes() {

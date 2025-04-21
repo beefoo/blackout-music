@@ -7,7 +7,7 @@ export default class MidiUI {
       el: 'composition',
       measuresPerPage: 4,
       onChangePage: () => {},
-      segmentsPerQuarterNote: 4, // 2 = 1/8th, 4 = 1/16th, 8 = 1/32nd
+      segmentsPerQuarterNote: 8, // 2 = 1/8th, 4 = 1/16th, 8 = 1/32nd, 16 = 1/64th
     };
     this.options = Object.assign(defaults, options);
     this.init();
@@ -28,10 +28,10 @@ export default class MidiUI {
       const $child = $el.children[i];
       const delay = i * step;
       setTimeout(() => {
-        $child.classList.remove('highlight');
+        $child.classList.add('highlight');
         setTimeout(() => {
-          $child.classList.add('highlight');
-        }, 1);
+          $child.classList.remove('highlight');
+        }, 500);
       }, delay);
     }
   }
