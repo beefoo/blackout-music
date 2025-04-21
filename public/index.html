@@ -38,6 +38,21 @@
         </div>
         <div class="composition-wrapper">
           <div id="composition" class="composition"></div>
+          <div id="pagination" class="pagination">
+            <button id="page-left" title="Previous page" disabled>
+              <span class="visually-hidden">Previous page</span>
+              <!-- prettier-ignore -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M16 5v2h-2V5zm-4 4V7h2v2zm-2 2V9h2v2zm0 2H8v-2h2zm2 2v-2h-2v2zm0 0h2v2h-2zm4 4v-2h-2v2z"/></svg>
+            </button>
+            <select id="select-page" name="page">
+              <option value="0">Page 1</option>
+            </select>
+            <button id="page-right" title="Next page">
+              <span class="visually-hidden">Next page</span>
+              <!-- prettier-ignore -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v2h2V5zm4 4V7h-2v2zm2 2V9h-2v2zm0 2h2v-2h-2zm-2 2v-2h2v2zm0 0h-2v2h2zm-4 4v-2h2v2z"/></svg>
+            </button>
+          </div>
         </div>
       </main>
       <div class="controls">

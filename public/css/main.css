@@ -91,6 +91,11 @@ button:hover {
   outline: none;
   border-color: var(--secondary-light);
 }
+button:disabled {
+  background-color: var(--base-dark);
+  border-color: var(--base-dark);
+  cursor: default;
+}
 
 p,
 li {
@@ -173,8 +178,9 @@ li {
   position: absolute;
   top: 12px;
   right: 12px;
-  bottom: 12px;
+  bottom: 50px;
   left: 12px;
+  overflow: hidden;
 }
 .note {
   position: absolute;
@@ -200,6 +206,23 @@ body.playing .note.active .cell.highlight {
   background: var(--secondary-lightest);
   animation: highlight 0.3s ease-in-out;
   animation-fill-mode: none;
+}
+
+.pagination {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.pagination button {
+  padding: 3px;
+}
+.pagination button svg {
+  width: 30px;
+  height: 30px;
+  display: block;
 }
 
 .controls {

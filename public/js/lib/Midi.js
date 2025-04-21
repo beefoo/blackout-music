@@ -212,6 +212,11 @@ export default class Midi {
   }
 
   setBounds(tickStart, tickEnd) {
+    this.isBusy = true;
+    if (this.isPlaying) {
+      this.ctx.suspend();
+      this.synth.pause();
+    }
     const { tracks } = this.state;
     const time = this.loadedMidi.header;
     tracks.forEach((track, i) => {
@@ -227,6 +232,9 @@ export default class Midi {
     });
     this.state.duration = time.ticksToSeconds(tickEnd - tickStart);
     this.state.start = time.ticksToSeconds(tickStart);
+    if (this.isPlaying) this.ctx.resume();
+    this.startedAt = this.ctx.currentTime;
+    this.isBusy = false;
   }
 
   skip(deltaSeconds) {

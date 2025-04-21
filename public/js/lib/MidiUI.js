@@ -15,7 +15,18 @@ export default class MidiUI {
 
   init() {
     this.$el = document.getElementById(this.options.el);
+    this.$pageLeft = document.getElementById('page-left');
+    this.$pageRight = document.getElementById('page-right');
+    this.$select = document.getElementById('select-page');
     this.loadListeners();
+  }
+
+  changePage(delta) {
+    const newPage = this.page + delta;
+    if (newPage < 0 || newPage >= this.pageCount) return;
+    this.page = newPage;
+    this.$select.value = newPage;
+    this.loadPage(newPage);
   }
 
   highlight(note, noteState) {
@@ -48,9 +59,20 @@ export default class MidiUI {
     this.cellH = 100.0 / midi.midiNoteRows;
     console.log(`Pages: ${this.pageCount}`);
     this.loadPage(this.page);
+    this.renderPagination();
   }
 
-  loadListeners() {}
+  loadListeners() {
+    this.$select.addEventListener('change', (_event) => {
+      this.onSelectPage();
+    });
+    this.$pageLeft.addEventListener('click', (_event) => {
+      this.changePage(-1);
+    });
+    this.$pageRight.addEventListener('click', (_event) => {
+      this.changePage(1);
+    });
+  }
 
   loadPage(page) {
     const { measuresPerPage } = this.options;
@@ -58,7 +80,19 @@ export default class MidiUI {
     this.tickStart = page * measuresPerPage * ticksPerMeasure;
     this.tickEnd = (page + 1) * measuresPerPage * ticksPerMeasure;
     this.render();
+
+    if (page === 0) this.$pageLeft.setAttribute('disabled', 'disabled');
+    else this.$pageLeft.removeAttribute('disabled');
+    if (page >= this.pageCount - 1)
+      this.$pageRight.setAttribute('disabled', 'disabled');
+    else this.$pageRight.removeAttribute('disabled');
+
     this.options.onChangePage();
+  }
+
+  onSelectPage() {
+    const page = parseInt(this.$select.value);
+    this.loadPage(page);
   }
 
   render() {
@@ -95,5 +129,14 @@ export default class MidiUI {
       });
     });
     $el.innerHTML = html;
+  }
+
+  renderPagination() {
+    const { $select, pageCount } = this;
+    let html = '';
+    for (let i = 0; i < pageCount; i++) {
+      html += `<option value="${i}">Page ${i + 1}</option>`;
+    }
+    $select.innerHTML = html;
   }
 }
