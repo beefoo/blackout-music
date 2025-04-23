@@ -45,13 +45,10 @@ export default class Midi {
     const midi = await ToneMidi.fromUrl(url);
     console.log(midi);
     this.loadedMidi = midi;
-
-    // make some calculations
-    this.measureCount = Math.ceil(
-      midi.header.ticksToMeasures(midi.durationTicks),
-    );
     this.ticksPerQNote = midi.header.ppq;
     this.ticksPerMeasure = this.ticksPerQNote * 4;
+    // make some calculations
+    this.measureCount = Math.ceil(midi.durationTicks / this.ticksPerMeasure);
     const midiNotes = midi.tracks
       .map((track) => track.notes.map((note) => note.midi))
       .flat();
@@ -93,6 +90,7 @@ export default class Midi {
               track: i,
               active: true,
               originalTicks: note.ticks,
+              durationTicks: note.durationTicks,
             };
           }),
         };
@@ -202,7 +200,11 @@ export default class Midi {
   }
 
   scheduleNote(note, state, secondsInTheFuture) {
-    this.synth.play(note, secondsInTheFuture);
+    const synthNote = {
+      name: note.name,
+      duration: state.measureDuration,
+    };
+    this.synth.play(synthNote, secondsInTheFuture);
     setTimeout(
       () => {
         this.options.onPlayNote(note, state);
@@ -220,15 +222,22 @@ export default class Midi {
     const { tracks } = this.state;
     const time = this.loadedMidi.header;
     tracks.forEach((track, i) => {
-      const indexStart = track.notes.findIndex(
-        (note) => note.originalTicks >= tickStart,
-      );
-      const indexEnd = track.notes.findIndex(
+      const indexStart = track.notes.findIndex((note) => {
+        const noteStart = note.originalTicks;
+        const noteEnd = noteStart + note.durationTicks;
+        return (
+          (noteStart >= tickStart && noteStart < tickEnd) ||
+          (noteEnd > tickStart && noteEnd < tickEnd)
+        );
+      });
+      let indexEnd = track.notes.findIndex(
         (note) => note.originalTicks >= tickEnd,
       );
+      if (indexEnd < 0) indexEnd = track.notes.length - 1;
       this.state.tracks[i].indexStart = indexStart;
       this.state.tracks[i].indexEnd = indexEnd;
       this.state.tracks[i].currentIndex = indexStart;
+      console.log(`Track ${i + 1}: [${indexStart}, ${indexEnd}]`);
     });
     this.state.duration = time.ticksToSeconds(tickEnd - tickStart);
     this.state.start = time.ticksToSeconds(tickStart);
@@ -294,6 +303,7 @@ export default class Midi {
     const { latency } = this.options;
     const { tracks } = this.loadedMidi;
     const { start, duration } = this.state;
+    const end = start + duration;
 
     const elapsed = this.ctx.currentTime - this.startedAt;
     let scheduleSeconds = (elapsed + latency) % duration;
@@ -302,6 +312,7 @@ export default class Midi {
     const queue = [];
     tracks.forEach((track, i) => {
       const { currentIndex, indexStart, indexEnd, notes } = state.tracks[i];
+      if (indexStart < 0 || indexEnd < 0) return;
       let index = currentIndex;
       while (true) {
         if (index >= indexEnd) {
@@ -312,14 +323,25 @@ export default class Midi {
           index = indexStart;
         }
         const note = track.notes[index];
+        const noteStart = Math.max(note.time, start);
+        let noteDur = note.duration;
+        const noteEnd = noteStart + noteDur;
+        if (noteStart > note.time) noteDur = noteDur - (noteStart - note.time);
+        if (noteEnd > end) noteDur = noteDur - (noteEnd - end);
         const noteState = notes[index];
-        const secondsInTheFuture = start + scheduleSeconds - note.time;
+        const secondsInTheFuture = start + scheduleSeconds - noteStart;
         if (!noteState.active) index += 1;
-        else if (secondsInTheFuture > latency) {
+        else if (secondsInTheFuture > latency * 2 && index === indexStart) {
           break;
         } else if (secondsInTheFuture >= 0) {
           index += 1;
-          queue.push({ note, noteState, secondsInTheFuture });
+          queue.push({
+            note,
+            noteState: Object.assign({}, noteState, {
+              measureDuration: noteDur,
+            }),
+            secondsInTheFuture,
+          });
         } else break;
       }
       this.state.tracks[i].currentIndex = index;

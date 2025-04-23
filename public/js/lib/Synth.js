@@ -73,6 +73,7 @@ export default class Synth {
     if (future < lastScheduled) return; // we cannot schedule before the last scheduled note
 
     const { name, duration } = note;
+    if (duration <= 0 || !name) return;
     // make longer notes have lower velocity
     let velocity = duration > 1 ? Math.pow(duration, -0.5) : 1;
     velocity = MathHelper.clamp(velocity, 0.5, 1);

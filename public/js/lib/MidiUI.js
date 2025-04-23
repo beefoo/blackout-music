@@ -34,6 +34,7 @@ export default class MidiUI {
     const { duration } = note;
     const { children } = $el;
     const count = children.length;
+    if (duration <= 0 || count <= 0) return;
     const step = Math.round((duration / count) * 1000);
     for (let i = 0; i < count; i++) {
       const $child = $el.children[i];
@@ -79,6 +80,7 @@ export default class MidiUI {
     const { ticksPerMeasure } = this.midi;
     this.tickStart = page * measuresPerPage * ticksPerMeasure;
     this.tickEnd = (page + 1) * measuresPerPage * ticksPerMeasure;
+    this.tickEnd = Math.min(this.tickEnd, this.midi.loadedMidi.durationTicks);
     this.render();
 
     if (page === 0) this.$pageLeft.setAttribute('disabled', 'disabled');
