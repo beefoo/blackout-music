@@ -237,7 +237,7 @@ export default class Midi {
       this.state.tracks[i].indexStart = indexStart;
       this.state.tracks[i].indexEnd = indexEnd;
       this.state.tracks[i].currentIndex = indexStart;
-      console.log(`Track ${i + 1}: [${indexStart}, ${indexEnd}]`);
+      // console.log(`Track ${i + 1}: [${indexStart}, ${indexEnd}]`);
     });
     this.state.duration = time.ticksToSeconds(tickEnd - tickStart);
     this.state.start = time.ticksToSeconds(tickStart);
