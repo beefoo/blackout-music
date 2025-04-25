@@ -85,7 +85,7 @@ export default class Midi {
           notes: track.notes.map((note, j) => {
             return {
               id: `note-${i}-${j}`,
-              row: note.midi - this.minMidiNote,
+              row: this.midiNoteRows - (note.midi - this.minMidiNote) - 1,
               index: j,
               track: i,
               active: true,
@@ -305,8 +305,9 @@ export default class Midi {
     const { start, duration } = this.state;
     const end = start + duration;
 
-    const elapsed = this.ctx.currentTime - this.startedAt;
-    let scheduleSeconds = (elapsed + latency) % duration;
+    const elapsedTotal = this.ctx.currentTime - this.startedAt;
+    const elapsedLoop = elapsedTotal % duration;
+    const elapsedSong = start + elapsedLoop;
 
     // build a queue of notes to play in the future
     const queue = [];
@@ -315,43 +316,62 @@ export default class Midi {
       if (indexStart < 0 || indexEnd < 0) return;
       let index = currentIndex;
       while (true) {
+        // reset track to the beginning of the page loop
         if (index >= indexEnd) {
-          console.log(
-            `Reset track ${i + 1} to index ${indexStart}`,
-            scheduleSeconds,
-          );
+          console.log(`Reset track ${i + 1} to index ${indexStart}`);
           index = indexStart;
+          break;
         }
         const note = track.notes[index];
-        const noteStart = Math.max(note.time, start);
-        let noteDur = note.duration;
-        const noteEnd = noteStart + noteDur;
-        if (noteStart > note.time) noteDur = noteDur - (noteStart - note.time);
-        if (noteEnd > end) noteDur = noteDur - (noteEnd - end);
         const noteState = notes[index];
-        const secondsInTheFuture = start + scheduleSeconds - noteStart;
-        if (!noteState.active) index += 1;
-        else if (secondsInTheFuture > latency * 2 && index === indexStart) {
-          break;
-        } else if (secondsInTheFuture >= 0) {
+
+        // note not active, skip it
+        if (!noteState.active) {
+          index += 1;
+          continue;
+        }
+
+        // if note starts before this page, chop it to the beginning of the page
+        let noteDur = note.duration;
+        const noteStart = Math.max(note.time, start);
+        const noteStartInLoop = noteStart - start;
+        if (noteStart > note.time) noteDur = noteDur - (noteStart - note.time);
+
+        // if note lasts longer than the page, chop it to the end of the page
+        const noteEnd = noteStart + noteDur;
+        if (noteEnd > end) noteDur = noteDur - (noteEnd - end);
+
+        // determine when the note should play (in the future)
+        const secondsUntilPlay = noteStart - elapsedSong;
+
+        // if it's within the latency, queue it
+        if (secondsUntilPlay >= 0 && secondsUntilPlay <= latency) {
           index += 1;
           queue.push({
             note,
             noteState: Object.assign({}, noteState, {
               measureDuration: noteDur,
             }),
-            secondsInTheFuture,
+            secondsUntilPlay,
           });
-        } else break;
+
+          // if we've passed this note, skip it
+        } else if (
+          secondsUntilPlay < 0 &&
+          Math.abs(secondsUntilPlay) < duration * 0.5
+        )
+          index += 1;
+        // if it's greater than latency, wait
+        else break;
       }
       this.state.tracks[i].currentIndex = index;
     });
 
     // schedule queue and ensure it is in chronological order
     if (queue.length > 0) {
-      queue.sort((a, b) => a.secondsInTheFuture - b.secondsInTheFuture);
+      queue.sort((a, b) => a.secondsUntilPlay - b.secondsUntilPlay);
       queue.forEach((item) => {
-        this.scheduleNote(item.note, item.noteState, item.secondsInTheFuture);
+        this.scheduleNote(item.note, item.noteState, item.secondsUntilPlay);
       });
     }
   }

@@ -24,13 +24,13 @@ export default class MidiUI {
   changePage(delta) {
     const newPage = this.page + delta;
     if (newPage < 0 || newPage >= this.pageCount) return;
-    this.page = newPage;
     this.$select.value = newPage;
     this.loadPage(newPage);
   }
 
   highlight(note, noteState) {
     const $el = document.getElementById(noteState.id);
+    if (!$el) return;
     const { duration } = note;
     const { children } = $el;
     const count = children.length;
@@ -51,7 +51,6 @@ export default class MidiUI {
   load(midi) {
     const { measuresPerPage, segmentsPerQuarterNote } = this.options;
     this.midi = midi;
-    this.page = 0;
     this.pageCount = Math.ceil((1.0 * midi.measureCount) / measuresPerPage);
     this.ticksPerCell = midi.ticksPerQNote / segmentsPerQuarterNote;
     this.cellsPerPage = segmentsPerQuarterNote * 4 * measuresPerPage;
@@ -59,7 +58,7 @@ export default class MidiUI {
     this.cellW = 100.0 / this.cellsPerPage;
     this.cellH = 100.0 / midi.midiNoteRows;
     console.log(`Pages: ${this.pageCount}`);
-    this.loadPage(this.page);
+    this.loadPage(0);
     this.renderPagination();
   }
 
@@ -78,6 +77,7 @@ export default class MidiUI {
   loadPage(page) {
     const { measuresPerPage } = this.options;
     const { ticksPerMeasure } = this.midi;
+    this.page = page;
     this.tickStart = page * measuresPerPage * ticksPerMeasure;
     this.tickEnd = (page + 1) * measuresPerPage * ticksPerMeasure;
     this.tickEnd = Math.min(this.tickEnd, this.midi.loadedMidi.durationTicks);
