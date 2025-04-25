@@ -24,6 +24,7 @@ export default class Midi {
     this.recalculateTimeout = false;
     this.queueRecalculation = false;
     this.firstStarted = false;
+    this.boundsJustSet = false;
     this.ctx = this.options.audioContext || new AudioContext();
     this.synth = new Synth();
 
@@ -241,9 +242,10 @@ export default class Midi {
     });
     this.state.duration = time.ticksToSeconds(tickEnd - tickStart);
     this.state.start = time.ticksToSeconds(tickStart);
-    if (this.isPlaying) this.ctx.resume();
     this.startedAt = this.ctx.currentTime;
+    if (this.isPlaying) this.ctx.resume();
     this.isBusy = false;
+    this.boundsJustSet = true;
   }
 
   skip(deltaSeconds) {
@@ -305,6 +307,11 @@ export default class Midi {
     const { start, duration } = this.state;
     const end = start + duration;
 
+    if (this.boundsJustSet) {
+      this.boundsJustSet = false;
+      this.startedAt = this.ctx.currentTime;
+    }
+
     const elapsedTotal = this.ctx.currentTime - this.startedAt;
     const elapsedLoop = elapsedTotal % duration;
     const elapsedSong = start + elapsedLoop;
@@ -334,7 +341,6 @@ export default class Midi {
         // if note starts before this page, chop it to the beginning of the page
         let noteDur = note.duration;
         const noteStart = Math.max(note.time, start);
-        const noteStartInLoop = noteStart - start;
         if (noteStart > note.time) noteDur = noteDur - (noteStart - note.time);
 
         // if note lasts longer than the page, chop it to the end of the page

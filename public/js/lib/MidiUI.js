@@ -116,8 +116,16 @@ export default class MidiUI {
           return;
         const noteState = state.tracks[i].notes[j];
         const { id, active, row } = noteState;
-        const cells = Math.max(Math.round(durationTicks / ticksPerCell), 1);
-        const n = MathHelper.norm(ticks, tickStart, tickEnd);
+        let cells = Math.max(Math.round(durationTicks / ticksPerCell), 1);
+        let n = MathHelper.norm(ticks, tickStart, tickEnd);
+
+        // account for notes that start before page
+        if (n < 0) {
+          n = 0;
+          const deltaTicks = tickStart - ticks;
+          cells -= deltaTicks;
+        }
+
         const cellStart = Math.round(n * (cellsPerPage - 1));
         const width = (cells / cellsPerPage) * 100;
         const left = (cellStart / cellsPerPage) * 100;
