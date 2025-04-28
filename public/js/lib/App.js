@@ -22,8 +22,8 @@ export default class App {
     );
     this.midi = new Midi(
       Object.assign(options, {
-        onPlayNote: (note, noteState) => {
-          this.onPlayNote(note, noteState);
+        onPlayNote: (note) => {
+          this.onPlayNote(note);
         },
       }),
     );
@@ -43,7 +43,7 @@ export default class App {
   }
 
   onPlayNote(note, noteState) {
-    this.ui.highlight(note, noteState);
+    this.ui.highlight(note);
   }
 
   async onSelectMidi(url) {

@@ -28,8 +28,8 @@ export default class MidiUI {
     this.loadPage(newPage);
   }
 
-  highlight(note, noteState) {
-    const $el = document.getElementById(noteState.id);
+  highlight(note) {
+    const $el = document.getElementById(note.id);
     if (!$el) return;
     const { duration } = note;
     const { children } = $el;
@@ -124,6 +124,11 @@ export default class MidiUI {
           n = 0;
           const deltaTicks = tickStart - ticks;
           cells -= deltaTicks;
+        }
+
+        // account for notes that end after page
+        if (endTicks > tickEnd) {
+          cells -= endTicks - tickEnd;
         }
 
         const cellStart = Math.round(n * (cellsPerPage - 1));
