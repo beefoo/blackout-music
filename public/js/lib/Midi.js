@@ -29,7 +29,7 @@ export default class Midi {
     this.synth = new Synth();
 
     this.$playButton = document.getElementById('toggle-play-button');
-    this.$resetButton = document.getElementById('reset-button');
+    this.$restartButton = document.getElementById('restart-button');
     this.$backwardButton = document.getElementById('backward-button');
     this.$forwardButton = document.getElementById('forward-button');
 
@@ -108,7 +108,7 @@ export default class Midi {
 
   loadListeners() {
     this.$playButton.addEventListener('click', (_event) => this.togglePlay());
-    this.$resetButton.addEventListener('click', (_event) => this.reset());
+    this.$restartButton.addEventListener('click', (_event) => this.restart());
     this.$backwardButton.addEventListener('click', (_event) => this.skip(-5));
     this.$forwardButton.addEventListener('click', (_event) => this.skip(5));
   }
@@ -186,7 +186,7 @@ export default class Midi {
     this.updateOffset();
   }
 
-  reset() {
+  restart() {
     if (!this.isReady()) return;
     if (!this.firstStarted) return;
     this.isBusy = true;
@@ -248,20 +248,23 @@ export default class Midi {
 
     this.isBusy = true;
 
-    const { tracks } = this.loadedMidi;
-    const { duration, start, durationOffset } = this.state;
+    const { tracks, ticks, durationTicks, durationOffsetTicks } = this.state;
     const { currentTime } = this.ctx;
+
+    const start = this.ticksToSeconds(ticks);
+    const duration = this.ticksToSeconds(durationTicks);
+    const durationOffset = this.ticksToSeconds(durationOffsetTicks);
 
     const elapsed = Math.max(currentTime - this.startedAt + deltaSeconds, 0);
     const newTime = elapsed % (duration - durationOffset);
     this.startedAt = currentTime - newTime;
 
     tracks.forEach((track, i) => {
-      const { indexStart, indexEnd } = this.state.tracks[i];
-      let newIndex = track.notes.findIndex(
-        (note, j) =>
-          note.time > newTime + start && j >= indexStart && j < indexEnd,
-      );
+      const { indexStart, indexEnd, notes } = track;
+      let newIndex = notes.findIndex((note, j) => {
+        const noteTime = this.ticksToSeconds(note.ticks);
+        return noteTime > newTime + start && j >= indexStart && j < indexEnd;
+      });
       newIndex = Math.max(newIndex, 0);
       this.state.tracks[i].currentIndex = newIndex;
     });
