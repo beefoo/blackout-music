@@ -7,6 +7,7 @@ export default class PointerManager {
       debug: false,
       onDrag: (pointer) => {},
       onDragEnd: (pointer) => {},
+      onDragEnter: (pointer) => {},
       onStart: (pointer) => {},
       onTap: (pointer) => {},
       target: 'app',
@@ -70,8 +71,9 @@ export default class PointerManager {
   onPointerMove(event) {
     const pointer = this.getPointer(event, false, true);
     if (!pointer) return;
-    pointer.onMove(event);
+    const targetChanged = pointer.onMove(event);
     this.options.onDrag(pointer);
+    if (targetChanged) this.options.onDragEnter(pointer);
   }
 
   onPointerUp(event) {

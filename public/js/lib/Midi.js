@@ -37,6 +37,15 @@ export default class Midi {
     this.loadListeners();
   }
 
+  activateNote(trackIndex, noteIndex, isActive = true) {
+    if (!this.isReady()) return;
+    const i = trackIndex;
+    const j = noteIndex;
+    this.state.tracks[i].notes[j].active = isActive;
+
+    this.queueRecalculateNotes();
+  }
+
   isReady() {
     return this.loadedMidi !== false && !this.isBusy;
   }
@@ -389,16 +398,6 @@ export default class Midi {
     const { bpm } = this.state;
     const beats = ticks / this.loadedMidi.header.ppq;
     return (60 / bpm) * beats;
-  }
-
-  toggleNote(trackIndex, noteIndex) {
-    if (!this.isReady()) return;
-    const i = trackIndex;
-    const j = noteIndex;
-    const { active } = this.state.tracks[i].notes[j];
-    this.state.tracks[i].notes[j].active = !active;
-
-    this.queueRecalculateNotes();
   }
 
   togglePlay() {

@@ -22,6 +22,7 @@ export default class Pointer {
     this.posLast = false;
     this.delta = false;
     this.deltaFromStart = false;
+    this.$target = false;
     this.data = {};
     if (event) this.onStart(event);
   }
@@ -67,6 +68,22 @@ export default class Pointer {
       y: pos.y - posStart.y,
     };
     this.posLast = pos;
+    // update target
+    const { childSelector } = this.options;
+    const $prevTarget = this.$target;
+    const prevTargetId =
+      $prevTarget && $prevTarget.hasAttribute('id') ? $prevTarget.id : false;
+    if (childSelector) {
+      const $target = this.constructor.getChildFromEvent(event, childSelector);
+      if ($target && $target.hasAttribute('id')) {
+        const targetId = $target.id;
+        if (targetId !== prevTargetId) {
+          this.$target = $target;
+          return true;
+        }
+      } else this.$target = false;
+    }
+    return false;
   }
 
   onStart(event) {
@@ -75,6 +92,7 @@ export default class Pointer {
     this.started = Date.now();
     this.posStart = this.constructor.getPositionFromEvent(event);
     this.posLast = structuredClone(this.posStart);
+    this.$target = false;
 
     // check to see if it is primary pointer
     if (event && event.originalEvent) {
@@ -83,11 +101,11 @@ export default class Pointer {
 
     // check to see if there's a child selector
     const { childSelector } = this.options;
-    this.$target = event.currentTarget;
     if (childSelector) {
-      this.$target = this.constructor.getChildFromEvent(event, childSelector);
+      const $target = this.constructor.getChildFromEvent(event, childSelector);
+      if ($target) this.$target = $target;
     }
-    if (this.$target) this.isValid = true;
+    this.isValid = true;
   }
 
   onEnd(_event) {
