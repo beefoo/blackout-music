@@ -100,48 +100,45 @@ export default class MidiUI {
   render() {
     const { midi, $el, ticksPerCell, cellsPerPage, cellH, tickStart, tickEnd } =
       this;
-    const { loadedMidi, state } = midi;
+    const { notes } = midi.state;
 
     let html = '';
-    loadedMidi.tracks.forEach((track, i) => {
-      track.notes.forEach((note, j) => {
-        const { ticks, durationTicks } = note;
-        const endTicks = ticks + durationTicks;
-        if (
-          !(
-            (ticks >= tickStart && ticks < tickEnd) ||
-            (endTicks >= tickStart && endTicks < tickEnd)
-          )
+
+    notes.forEach((note, i) => {
+      const { active, id, row, ticks, durationTicks } = note;
+      const endTicks = ticks + durationTicks;
+      if (
+        !(
+          (ticks >= tickStart && ticks < tickEnd) ||
+          (endTicks >= tickStart && endTicks < tickEnd)
         )
-          return;
-        const noteState = state.tracks[i].notes[j];
-        const { id, active, row } = noteState;
-        let cells = Math.max(Math.round(durationTicks / ticksPerCell), 1);
-        let n = MathHelper.norm(ticks, tickStart, tickEnd);
+      )
+        return;
+      let cells = Math.max(Math.round(durationTicks / ticksPerCell), 1);
+      let n = MathHelper.norm(ticks, tickStart, tickEnd);
 
-        // account for notes that start before page
-        if (n < 0) {
-          n = 0;
-          const deltaTicks = tickStart - ticks;
-          cells -= deltaTicks;
-        }
+      // account for notes that start before page
+      if (n < 0) {
+        n = 0;
+        const deltaTicks = tickStart - ticks;
+        cells -= deltaTicks;
+      }
 
-        // account for notes that end after page
-        if (endTicks > tickEnd) {
-          cells -= endTicks - tickEnd;
-        }
+      // account for notes that end after page
+      if (endTicks > tickEnd) {
+        cells -= endTicks - tickEnd;
+      }
 
-        const cellStart = Math.round(n * (cellsPerPage - 1));
-        const width = (cells / cellsPerPage) * 100;
-        const left = (cellStart / cellsPerPage) * 100;
-        const top = row * cellH;
-        const activeLabel = active ? 'active' : '';
-        html += `<button id="${id}" class="note ${activeLabel}" style="width: ${width}%; height: ${cellH}%; top: ${top}%; left: ${left}%;">`;
-        for (let n = 0; n < cells; n++) {
-          html += '<span class="cell"></span>';
-        }
-        html += '</button>';
-      });
+      const cellStart = Math.round(n * (cellsPerPage - 1));
+      const width = (cells / cellsPerPage) * 100;
+      const left = (cellStart / cellsPerPage) * 100;
+      const top = row * cellH;
+      const activeLabel = active ? 'active' : '';
+      html += `<button id="${id}" class="note ${activeLabel}" style="width: ${width}%; height: ${cellH}%; top: ${top}%; left: ${left}%;">`;
+      for (let n = 0; n < cells; n++) {
+        html += '<span class="cell"></span>';
+      }
+      html += '</button>';
     });
     $el.innerHTML = html;
   }

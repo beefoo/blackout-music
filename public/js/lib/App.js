@@ -67,13 +67,12 @@ export default class App {
     if (!pointer.$target || !pointer.$target.hasAttribute('id')) return;
     const id = pointer.$target.id;
     if (!id.startsWith('note-')) return;
-    const [_note, trackIndex, noteIndex] = id.split('-');
-    const i = parseInt(trackIndex);
-    const j = parseInt(noteIndex);
+    const [_note, noteIndex] = id.split('-');
+    const i = parseInt(noteIndex);
 
     // toggle active
     pointer.$target.classList.toggle('active');
     const isActive = pointer.$target.classList.contains('active');
-    this.midi.activateNote(i, j, isActive);
+    this.midi.activateNote(i, isActive);
   }
 }

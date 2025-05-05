@@ -25,6 +25,7 @@ export default class Midi {
     this.queueRecalculation = false;
     this.firstStarted = false;
     this.boundsJustSet = false;
+    this.previousTime = false;
     this.ctx = this.options.audioContext || new AudioContext();
     this.synth = new Synth();
 
@@ -37,33 +38,27 @@ export default class Midi {
     this.loadListeners();
   }
 
-  activateNote(trackIndex, noteIndex, isActive = true) {
+  activateNote(noteIndex, isActive = true) {
     if (!this.isReady()) return;
-    const i = trackIndex;
-    const j = noteIndex;
-    this.state.tracks[i].notes[j].active = isActive;
+    this.state.notes[noteIndex].active = isActive;
 
     this.queueRecalculateNotes();
   }
 
   // return flattened array of active notes on this page
   getActiveNotes() {
-    const notes = this.state.tracks
-      .map((track) => {
-        const { indexStart, indexEnd, notes } = track;
-        return notes.filter(
-          (note, j) => j >= indexStart && j <= indexEnd && note.active,
-        );
-      })
-      .flat();
+    const { indexStart, indexEnd, notes } = this.state;
+    const activeNotes = notes.filter(
+      (note, i) => i >= indexStart && i <= indexEnd && note.active,
+    );
 
     // sort them
-    notes.sort((a, b) => {
+    activeNotes.sort((a, b) => {
       if (a.offsetTicks === b.offsetTicks) return a.ticks - b.ticks;
       return a.offsetTicks - b.offsetTicks;
     });
 
-    return notes;
+    return activeNotes;
   }
 
   isReady() {
@@ -100,6 +95,35 @@ export default class Midi {
     //   `Dur tick range: ${this.minMidiDurTicks} - ${this.maxMidiDurTicks}`,
     // );
 
+    // flatten the notes
+    const notes = midi.tracks
+      .map((track, i) => {
+        return track.notes.map((note, j) => {
+          return {
+            name: note.name,
+            row: this.midiNoteRows - (note.midi - this.minMidiNote) - 1,
+            track: i,
+            trackNoteIndex: j,
+            active: true,
+            ticks: note.ticks,
+            offsetTicks: 0,
+            durationTicks: note.durationTicks,
+          };
+        });
+      })
+      .flat();
+    // sort them
+    notes.sort((a, b) => {
+      if (a.ticks === b.ticks) {
+        return a.durationTicks - b.durationTicks;
+      } else return a.ticks - b.ticks;
+    });
+    // add index and id
+    notes.forEach((_note, i) => {
+      notes[i].index = i;
+      notes[i].id = `note-${i}`;
+    });
+
     // keep track of state
     this.state = {
       bpm: Math.round(midi.header.tempos[0].bpm),
@@ -108,30 +132,15 @@ export default class Midi {
       durationTicks: midi.durationTicks,
       durationOffsetTicks: 0,
       loopProgress: 0,
-      tracks: midi.tracks.map((track, i) => {
-        return {
-          currentIndex: 0,
-          indexStart: 0,
-          indexEnd: track.notes.length - 1,
-          noteCount: track.notes.length,
-          notes: track.notes.map((note, j) => {
-            return {
-              id: `note-${i}-${j}`,
-              name: note.name,
-              row: this.midiNoteRows - (note.midi - this.minMidiNote) - 1,
-              index: j,
-              track: i,
-              active: true,
-              ticks: note.ticks,
-              offsetTicks: 0,
-              durationTicks: note.durationTicks,
-            };
-          }),
-        };
-      }),
+      currentIndex: 0,
+      indexStart: 0,
+      indexEnd: notes.length - 1,
+      noteCount: notes.length,
+      notes,
     };
     if (this.isPlaying) this.startedAt = this.ctx.currentTime;
     else this.startedAt = 0;
+    this.previousTime = false;
     this.isBusy = false;
     return true;
   }
@@ -165,6 +174,7 @@ export default class Midi {
     this.ctx.resume();
     if (!this.firstStarted) this.onFirstStart();
     else if (this.startedAt === false) this.startedAt = this.ctx.currentTime;
+    this.previousTime = false;
   }
 
   queueRecalculateNotes() {
@@ -191,8 +201,7 @@ export default class Midi {
   recalculateOffsets() {
     this.isBusy = true;
     const { loopProgress } = this.state;
-    // get a flattened array of notes
-    const notes = this.state.tracks.map((track) => track.notes).flat();
+    const notes = this.state.notes.slice(0);
     // sort notes by ticks and whether they are active
     notes.sort((a, b) => {
       if (a.ticks === b.ticks) {
@@ -205,10 +214,9 @@ export default class Midi {
     let offsetTicks = 0;
     notes.forEach((note, index) => {
       const { active, ticks } = note;
-      const i = note.track;
-      const j = note.index;
+      const i = note.index;
       // offset time based on previously inactive notes
-      this.state.tracks[i].notes[j].offsetTicks = offsetTicks;
+      this.state.notes[i].offsetTicks = offsetTicks;
       // increase offset of time if note is not active
       if (!active && index < noteCount - 1) {
         const nextNote = notes[index + 1];
@@ -223,6 +231,7 @@ export default class Midi {
       const durationOffset = this.ticksToSeconds(durationOffsetTicks);
       const currentLoopTime = loopProgress * (duration - durationOffset);
       this.startedAt = this.ctx.currentTime - currentLoopTime;
+      this.previousTime = false;
     }
     this.isBusy = false;
   }
@@ -232,12 +241,11 @@ export default class Midi {
     if (!this.firstStarted) return;
     this.isBusy = true;
     if (this.state) {
-      this.state.tracks.forEach((track, i) => {
-        this.state.tracks[i].currentIndex = track.indexStart;
-      });
+      this.state.currentIndex = this.state.indexStart;
     }
     this.startedAt = this.isPlaying ? this.ctx.currentTime : false;
     this.state.loopProgress = 0;
+    this.previousTime = false;
     this.isBusy = false;
   }
 
@@ -257,29 +265,29 @@ export default class Midi {
       this.ctx.suspend();
       this.synth.pause();
     }
-    const { tracks } = this.state;
+    const { notes } = this.state;
 
-    tracks.forEach((track, i) => {
-      const indexStart = track.notes.findIndex((note) => {
-        const noteStart = note.ticks;
-        const noteEnd = noteStart + note.durationTicks;
-        return (
-          (noteStart >= tickStart && noteStart < tickEnd) ||
-          (noteEnd > tickStart && noteEnd < tickEnd)
-        );
-      });
-      let indexEnd = track.notes.findIndex((note) => note.ticks >= tickEnd);
-      if (indexEnd < 0) indexEnd = track.notes.length - 1;
-      this.state.tracks[i].indexStart = indexStart;
-      this.state.tracks[i].indexEnd = indexEnd;
-      this.state.tracks[i].currentIndex = indexStart;
-      // console.log(`Track ${i + 1}: [${indexStart}, ${indexEnd}]`);
+    const indexStart = notes.findIndex((note) => {
+      const noteStart = note.ticks;
+      const noteEnd = noteStart + note.durationTicks;
+      return (
+        (noteStart >= tickStart && noteStart < tickEnd) ||
+        (noteEnd > tickStart && noteEnd < tickEnd)
+      );
     });
+
+    let indexEnd = notes.findIndex((note) => note.ticks >= tickEnd);
+    if (indexEnd < 0) indexEnd = notes.length - 1;
+
+    this.state.indexStart = indexStart;
+    this.state.indexEnd = indexEnd;
+    this.state.currentIndex = indexStart;
     this.state.durationTicks = tickEnd - tickStart;
     this.state.ticks = tickStart;
     this.state.loopProgress = 0;
     this.updateOffset();
     this.startedAt = this.ctx.currentTime;
+    this.previousTime = false;
     if (this.isPlaying) this.ctx.resume();
     this.isBusy = false;
     this.boundsJustSet = true;
@@ -291,7 +299,14 @@ export default class Midi {
 
     this.isBusy = true;
 
-    const { tracks, ticks, durationTicks, durationOffsetTicks } = this.state;
+    const {
+      notes,
+      ticks,
+      durationTicks,
+      durationOffsetTicks,
+      indexStart,
+      indexEnd,
+    } = this.state;
     const { currentTime } = this.ctx;
 
     const start = this.ticksToSeconds(ticks);
@@ -301,17 +316,15 @@ export default class Midi {
     const elapsed = Math.max(currentTime - this.startedAt + deltaSeconds, 0);
     const newTime = elapsed % (duration - durationOffset);
     this.startedAt = currentTime - newTime;
+    this.previousTime = false;
     this.state.loopProgress = newTime / (duration - durationOffset);
 
-    tracks.forEach((track, i) => {
-      const { indexStart, indexEnd, notes } = track;
-      let newIndex = notes.findIndex((note, j) => {
-        const noteTime = this.ticksToSeconds(note.ticks);
-        return noteTime > newTime + start && j >= indexStart && j < indexEnd;
-      });
-      newIndex = Math.max(newIndex, 0);
-      this.state.tracks[i].currentIndex = newIndex;
+    let newIndex = notes.findIndex((note, i) => {
+      const noteTime = this.ticksToSeconds(note.ticks);
+      return noteTime > newTime + start && i >= indexStart && i < indexEnd;
     });
+    newIndex = Math.max(newIndex, 0);
+    this.state.currentIndex = newIndex;
 
     this.isBusy = false;
   }
@@ -335,6 +348,7 @@ export default class Midi {
     console.log(`New BPM: ${newBpm}`);
 
     this.startedAt = currentTime - newTime;
+    this.previousTime = false;
     this.state.bpm = newBpm;
     this.isBusy = false;
   }
@@ -343,10 +357,29 @@ export default class Midi {
     window.requestAnimationFrame(() => this.step());
     if (!this.isPlaying || !this.isReady()) return;
 
+    const { previousTime } = this;
     const { latency } = this.options;
-    const { tracks, ticks, durationTicks, offsetTicks, durationOffsetTicks } =
-      this.state;
+    const { currentTime } = this.ctx;
+    const {
+      notes,
+      ticks,
+      durationTicks,
+      offsetTicks,
+      durationOffsetTicks,
+      currentIndex,
+      indexStart,
+      indexEnd,
+    } = this.state;
     const nearZero = 0.01;
+
+    if (previousTime !== false && previousTime === currentTime) return;
+    this.previousTime = currentTime;
+
+    if (indexStart < 0 || indexEnd < 0) return;
+
+    const activeNotes = this.getActiveNotes();
+    if (activeNotes.length <= 0) return;
+    const firstNote = activeNotes[0];
 
     const start = this.ticksToSeconds(ticks);
     const duration = this.ticksToSeconds(durationTicks);
@@ -356,10 +389,13 @@ export default class Midi {
 
     if (this.boundsJustSet) {
       this.boundsJustSet = false;
-      this.startedAt = this.ctx.currentTime;
+      this.startedAt = currentTime;
+    }
+    if (this.wasLoopReset(previousTime, currentTime)) {
+      this.startedAt = currentTime;
     }
 
-    const elapsedTotal = this.ctx.currentTime - this.startedAt;
+    const elapsedTotal = currentTime - this.startedAt;
     const elapsedLoop = elapsedTotal % (duration - durationOffset);
     const elapsedSong = start - startOffset + elapsedLoop;
 
@@ -367,61 +403,52 @@ export default class Midi {
 
     // build a queue of notes to play in the future
     const queue = [];
-    tracks.forEach((track, i) => {
-      const { currentIndex, indexStart, indexEnd } = track;
-      if (indexStart < 0 || indexEnd < 0) return;
-      let index = currentIndex;
-      while (true) {
-        // reset track to the beginning of the page loop
-        if (index >= indexEnd) {
-          // console.log(`Reset track ${i + 1} to index ${indexStart}`);
-          index = indexStart;
-          break;
-        }
-        const note = track.notes[index];
-
-        // note not active, skip it
-        if (!note.active) {
-          index += 1;
-          continue;
-        }
-
-        // if note starts before this page, chop it to the beginning of the page
-        let noteDur = this.ticksToSeconds(note.durationTicks);
-        const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
-        const noteStart = Math.max(noteTime, start - startOffset);
-        if (noteStart > noteTime) noteDur = noteDur - (noteStart - noteTime);
-
-        // if note lasts longer than the page, chop it to the end of the page
-        const noteEnd = noteStart + noteDur;
-        if (noteEnd > end) noteDur = noteDur - (noteEnd - end);
-
-        // determine when the note should play (in the future)
-        let secondsUntilPlay = noteStart - elapsedSong;
-        if (secondsUntilPlay < 0 && secondsUntilPlay >= -nearZero)
-          secondsUntilPlay = 0;
-
-        // if it's within the latency, queue it
-        if (secondsUntilPlay >= 0 && secondsUntilPlay <= latency) {
-          index += 1;
-          queue.push({
-            note: Object.assign({}, note, {
-              duration: noteDur,
-            }),
-            secondsUntilPlay,
-          });
-
-          // if we've passed this note, skip it
-        } else if (
-          secondsUntilPlay < 0 &&
-          Math.abs(secondsUntilPlay) < duration * 0.5
-        ) {
-          index += 1;
-          // if it's greater than latency, wait
-        } else break;
+    let index = currentIndex;
+    while (true) {
+      // reset track to the beginning of the page loop
+      if (index >= indexEnd) {
+        // console.log(`Reset to index ${indexStart}`);
+        index = indexStart;
+        break;
       }
-      this.state.tracks[i].currentIndex = index;
-    });
+      const note = notes[index];
+      const isFirstActive = note.id === firstNote.id;
+
+      // note not active, skip it
+      if (!note.active) {
+        index += 1;
+        continue;
+      }
+
+      // if note starts before this page, chop it to the beginning of the page
+      let noteDur = this.ticksToSeconds(note.durationTicks);
+      const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
+      const noteStart = Math.max(noteTime, start - startOffset);
+      if (noteStart > noteTime) noteDur = noteDur - (noteStart - noteTime);
+
+      // if note lasts longer than the page, chop it to the end of the page
+      const noteEnd = noteStart + noteDur;
+      if (noteEnd > end) noteDur = noteDur - (noteEnd - end);
+
+      // determine when the note should play (in the future)
+      let secondsUntilPlay = noteStart - elapsedSong;
+      if (secondsUntilPlay < 0 && secondsUntilPlay >= -nearZero)
+        secondsUntilPlay = 0;
+
+      // if it's within the latency, queue it
+      if (secondsUntilPlay >= 0 && secondsUntilPlay <= latency) {
+        index += 1;
+        queue.push({
+          note: Object.assign({}, note, {
+            duration: noteDur,
+          }),
+          secondsUntilPlay,
+        });
+
+        // otherwise, wait
+      } else break;
+    } // end while loop
+    this.state.currentIndex = index;
 
     // schedule queue and ensure it is in chronological order
     if (queue.length > 0) {
@@ -450,13 +477,39 @@ export default class Midi {
   updateOffset() {
     // return flattened active notes on this page
     const notes = this.getActiveNotes();
+    if (notes.length <= 0) return;
 
     const firstNote = notes[0];
     const lastNote = notes[notes.length - 1];
     const offsetTicks = firstNote.offsetTicks;
-    const durationOffsetTicks = lastNote.offsetTicks - firstNote.offsetTicks;
+    let durationOffsetTicks = lastNote.offsetTicks - firstNote.offsetTicks;
+
+    // if only a single note, pad it
+    if (notes.length === 1) {
+      const durationTicks = firstNote.durationTicks * 2;
+      durationOffsetTicks = this.state.durationTicks - durationTicks;
+    }
 
     this.state.offsetTicks = offsetTicks;
     this.state.durationOffsetTicks = durationOffsetTicks;
+  }
+
+  wasLoopReset(previousTime, currentTime) {
+    const { startedAt } = this;
+    const { durationTicks, durationOffsetTicks } = this.state;
+    const duration = this.ticksToSeconds(durationTicks);
+    const durationOffset = this.ticksToSeconds(durationOffsetTicks);
+
+    const elapsedTotal = currentTime - startedAt;
+    const elapsedLoop = elapsedTotal % (duration - durationOffset);
+
+    let loopWasReset = false;
+    if (previousTime !== false) {
+      const prevElapsedTotal = previousTime - startedAt;
+      const prevElapsedLoop = prevElapsedTotal % (duration - durationOffset);
+      loopWasReset = prevElapsedLoop > elapsedLoop;
+    }
+
+    return loopWasReset;
   }
 }
