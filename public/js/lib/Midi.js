@@ -46,6 +46,26 @@ export default class Midi {
     this.queueRecalculateNotes();
   }
 
+  // return flattened array of active notes on this page
+  getActiveNotes() {
+    const notes = this.state.tracks
+      .map((track) => {
+        const { indexStart, indexEnd, notes } = track;
+        return notes.filter(
+          (note, j) => j >= indexStart && j <= indexEnd && note.active,
+        );
+      })
+      .flat();
+
+    // sort them
+    notes.sort((a, b) => {
+      if (a.offsetTicks === b.offsetTicks) return a.ticks - b.ticks;
+      return a.offsetTicks - b.offsetTicks;
+    });
+
+    return notes;
+  }
+
   isReady() {
     return this.loadedMidi !== false && !this.isBusy;
   }
@@ -87,6 +107,7 @@ export default class Midi {
       offsetTicks: 0,
       durationTicks: midi.durationTicks,
       durationOffsetTicks: 0,
+      loopProgress: 0,
       tracks: midi.tracks.map((track, i) => {
         return {
           currentIndex: 0,
@@ -168,6 +189,8 @@ export default class Midi {
   }
 
   recalculateOffsets() {
+    this.isBusy = true;
+    const { loopProgress } = this.state;
     // get a flattened array of notes
     const notes = this.state.tracks.map((track) => track.notes).flat();
     // sort notes by ticks and whether they are active
@@ -193,6 +216,15 @@ export default class Midi {
       }
     });
     this.updateOffset();
+    // adjust start time
+    if (this.startedAt) {
+      const { durationTicks, durationOffsetTicks } = this.state;
+      const duration = this.ticksToSeconds(durationTicks);
+      const durationOffset = this.ticksToSeconds(durationOffsetTicks);
+      const currentLoopTime = loopProgress * (duration - durationOffset);
+      this.startedAt = this.ctx.currentTime - currentLoopTime;
+    }
+    this.isBusy = false;
   }
 
   restart() {
@@ -205,6 +237,7 @@ export default class Midi {
       });
     }
     this.startedAt = this.isPlaying ? this.ctx.currentTime : false;
+    this.state.loopProgress = 0;
     this.isBusy = false;
   }
 
@@ -244,6 +277,7 @@ export default class Midi {
     });
     this.state.durationTicks = tickEnd - tickStart;
     this.state.ticks = tickStart;
+    this.state.loopProgress = 0;
     this.updateOffset();
     this.startedAt = this.ctx.currentTime;
     if (this.isPlaying) this.ctx.resume();
@@ -267,6 +301,7 @@ export default class Midi {
     const elapsed = Math.max(currentTime - this.startedAt + deltaSeconds, 0);
     const newTime = elapsed % (duration - durationOffset);
     this.startedAt = currentTime - newTime;
+    this.state.loopProgress = newTime / (duration - durationOffset);
 
     tracks.forEach((track, i) => {
       const { indexStart, indexEnd, notes } = track;
@@ -307,10 +342,10 @@ export default class Midi {
   step() {
     window.requestAnimationFrame(() => this.step());
     if (!this.isPlaying || !this.isReady()) return;
-    const { state } = this;
+
     const { latency } = this.options;
-    const { tracks } = this.state;
-    const { ticks, durationTicks, offsetTicks, durationOffsetTicks } = state;
+    const { tracks, ticks, durationTicks, offsetTicks, durationOffsetTicks } =
+      this.state;
     const nearZero = 0.01;
 
     const start = this.ticksToSeconds(ticks);
@@ -328,6 +363,8 @@ export default class Midi {
     const elapsedLoop = elapsedTotal % (duration - durationOffset);
     const elapsedSong = start - startOffset + elapsedLoop;
 
+    this.state.loopProgress = elapsedLoop / (duration - durationOffset);
+
     // build a queue of notes to play in the future
     const queue = [];
     tracks.forEach((track, i) => {
@@ -339,6 +376,7 @@ export default class Midi {
         if (index >= indexEnd) {
           // console.log(`Reset track ${i + 1} to index ${indexStart}`);
           index = indexStart;
+          break;
         }
         const note = track.notes[index];
 
@@ -350,7 +388,7 @@ export default class Midi {
 
         // if note starts before this page, chop it to the beginning of the page
         let noteDur = this.ticksToSeconds(note.durationTicks);
-        const noteTime = this.ticksToSeconds(note.ticks);
+        const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
         const noteStart = Math.max(noteTime, start - startOffset);
         if (noteStart > noteTime) noteDur = noteDur - (noteStart - noteTime);
 
@@ -410,25 +448,15 @@ export default class Midi {
 
   // determine the offset of the current page from de-activated notes
   updateOffset() {
-    const { tracks } = this.state;
-    let offsetTicksStart = 0;
-    let offsetTicksEnd = 0;
-    tracks.forEach((track, i) => {
-      const { indexStart, indexEnd } = track;
+    // return flattened active notes on this page
+    const notes = this.getActiveNotes();
 
-      const firstNoteState = track.notes[indexStart];
-      const firstNote = this.loadedMidi.tracks[i].notes[indexStart];
-      const trackOffsetTicksStart = firstNoteState.ticks - firstNote.ticks;
-      if (trackOffsetTicksStart > offsetTicksStart)
-        offsetTicksStart = trackOffsetTicksStart;
+    const firstNote = notes[0];
+    const lastNote = notes[notes.length - 1];
+    const offsetTicks = firstNote.offsetTicks;
+    const durationOffsetTicks = lastNote.offsetTicks - firstNote.offsetTicks;
 
-      const lastNoteState = track.notes[indexEnd];
-      const lastNote = this.loadedMidi.tracks[i].notes[indexEnd];
-      const trackOffsetTicksEnd = lastNoteState.ticks - lastNote.ticks;
-      if (trackOffsetTicksEnd > offsetTicksEnd)
-        offsetTicksEnd = trackOffsetTicksEnd;
-    });
-    this.state.offsetTicks = offsetTicksStart;
-    this.state.durationOffsetTicks = offsetTicksEnd - offsetTicksStart;
+    this.state.offsetTicks = offsetTicks;
+    this.state.durationOffsetTicks = durationOffsetTicks;
   }
 }

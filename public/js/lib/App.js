@@ -74,6 +74,6 @@ export default class App {
     // toggle active
     pointer.$target.classList.toggle('active');
     const isActive = pointer.$target.classList.contains('active');
-    //this.midi.activateNote(i, j, isActive);
+    this.midi.activateNote(i, j, isActive);
   }
 }
