@@ -25,6 +25,7 @@ export default class Midi {
     this.queueRecalculation = false;
     this.firstStarted = false;
     this.boundsJustSet = false;
+    this.durationJustChanged = false;
     this.previousTime = false;
     this.ctx = this.options.audioContext || new AudioContext();
     this.synth = new Synth();
@@ -63,6 +64,19 @@ export default class Midi {
 
   isReady() {
     return this.loadedMidi !== false && !this.isBusy;
+  }
+
+  jumpToNote(currentTime, noteIndex) {
+    if (this.startedAt === false) return;
+    const padding = 0.01;
+    const { ticks, offsetTicks } = this.state;
+    const note = this.state.notes[noteIndex];
+
+    const loopStart = this.ticksToSeconds(ticks - offsetTicks);
+    const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
+    const noteLoopTime = Math.max(noteTime - loopStart - padding, 0);
+    this.startedAt = currentTime - noteLoopTime;
+    this.previousTime = false;
   }
 
   async loadFromURL(url) {
@@ -200,7 +214,7 @@ export default class Midi {
 
   recalculateOffsets() {
     this.isBusy = true;
-    const { loopProgress } = this.state;
+    const { currentIndex, loopProgress } = this.state;
     const notes = this.state.notes.slice(0);
     // sort notes by ticks and whether they are active
     notes.sort((a, b) => {
@@ -224,15 +238,7 @@ export default class Midi {
       }
     });
     this.updateOffset();
-    // adjust start time
-    if (this.startedAt) {
-      const { durationTicks, durationOffsetTicks } = this.state;
-      const duration = this.ticksToSeconds(durationTicks);
-      const durationOffset = this.ticksToSeconds(durationOffsetTicks);
-      const currentLoopTime = loopProgress * (duration - durationOffset);
-      this.startedAt = this.ctx.currentTime - currentLoopTime;
-      this.previousTime = false;
-    }
+    this.durationJustChanged = true;
     this.isBusy = false;
   }
 
@@ -379,7 +385,6 @@ export default class Midi {
 
     const activeNotes = this.getActiveNotes();
     if (activeNotes.length <= 0) return;
-    const firstNote = activeNotes[0];
 
     const start = this.ticksToSeconds(ticks);
     const duration = this.ticksToSeconds(durationTicks);
@@ -390,8 +395,10 @@ export default class Midi {
     if (this.boundsJustSet) {
       this.boundsJustSet = false;
       this.startedAt = currentTime;
-    }
-    if (this.wasLoopReset(previousTime, currentTime)) {
+    } else if (this.durationJustChanged) {
+      this.durationJustChanged = false;
+      this.jumpToNote(currentTime, currentIndex);
+    } else if (this.wasLoopReset(previousTime, currentTime)) {
       this.startedAt = currentTime;
     }
 
@@ -412,7 +419,6 @@ export default class Midi {
         break;
       }
       const note = notes[index];
-      const isFirstActive = note.id === firstNote.id;
 
       // note not active, skip it
       if (!note.active) {
@@ -448,6 +454,9 @@ export default class Midi {
         // otherwise, wait
       } else break;
     } // end while loop
+
+    if (this.isBusy) return;
+
     this.state.currentIndex = index;
 
     // schedule queue and ensure it is in chronological order
