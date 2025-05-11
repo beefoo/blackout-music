@@ -62,13 +62,45 @@ export default class Midi {
     return activeNotes;
   }
 
+  getNoteSchedule(noteIndex, currentTime) {
+    const { notes, ticks, durationTicks, offsetTicks, durationOffsetTicks } =
+      this.state;
+    const nearZero = 0.01;
+    const note = notes[noteIndex];
+
+    const duration = this.ticksToSeconds(durationTicks - durationOffsetTicks);
+    const start = this.ticksToSeconds(ticks - offsetTicks);
+    const end = start + duration;
+
+    const elapsedTotal = currentTime - this.startedAt;
+    const elapsedLoop = elapsedTotal % duration;
+    const elapsedSong = start + elapsedLoop;
+
+    // if note starts before this page, chop it to the beginning of the page
+    let noteDur = this.ticksToSeconds(note.durationTicks);
+    const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
+    const noteStart = Math.max(noteTime, start);
+    if (noteStart > noteTime) noteDur = noteDur - (noteStart - noteTime);
+
+    // if note lasts longer than the page, chop it to the end of the page
+    const noteEnd = noteStart + noteDur;
+    if (noteEnd > end) noteDur = noteDur - (noteEnd - end);
+
+    // determine when the note should play (in the future)
+    let secondsUntilPlay = noteStart - elapsedSong;
+    if (secondsUntilPlay < 0 && secondsUntilPlay >= -nearZero)
+      secondsUntilPlay = 0;
+
+    return { secondsUntilPlay, noteDur };
+  }
+
   isReady() {
     return this.loadedMidi !== false && !this.isBusy;
   }
 
-  jumpToNote(currentTime, noteIndex) {
+  jumpToNote(currentTime, noteIndex, secondsUntilPlay) {
     if (this.startedAt === false) return;
-    const padding = 0.01;
+    const padding = Math.max(secondsUntilPlay, 0.01);
     const { ticks, offsetTicks } = this.state;
     const note = this.state.notes[noteIndex];
 
@@ -145,7 +177,6 @@ export default class Midi {
       offsetTicks: 0,
       durationTicks: midi.durationTicks,
       durationOffsetTicks: 0,
-      loopProgress: 0,
       currentIndex: 0,
       indexStart: 0,
       indexEnd: notes.length - 1,
@@ -214,7 +245,12 @@ export default class Midi {
 
   recalculateOffsets() {
     this.isBusy = true;
-    const { currentIndex, loopProgress } = this.state;
+    const { currentIndex } = this.state;
+    const { currentTime } = this.ctx;
+    const { secondsUntilPlay, noteDur } = this.getNoteSchedule(
+      currentIndex,
+      currentTime,
+    );
     const notes = this.state.notes.slice(0);
     // sort notes by ticks and whether they are active
     notes.sort((a, b) => {
@@ -239,6 +275,8 @@ export default class Midi {
     });
     this.updateOffset();
     this.durationJustChanged = true;
+    this.lastNoteIndex = currentIndex;
+    this.secondsUntilPlayLastNote = secondsUntilPlay;
     this.isBusy = false;
   }
 
@@ -250,7 +288,6 @@ export default class Midi {
       this.state.currentIndex = this.state.indexStart;
     }
     this.startedAt = this.isPlaying ? this.ctx.currentTime : false;
-    this.state.loopProgress = 0;
     this.previousTime = false;
     this.isBusy = false;
   }
@@ -290,7 +327,6 @@ export default class Midi {
     this.state.currentIndex = indexStart;
     this.state.durationTicks = tickEnd - tickStart;
     this.state.ticks = tickStart;
-    this.state.loopProgress = 0;
     this.updateOffset();
     this.startedAt = this.ctx.currentTime;
     this.previousTime = false;
@@ -323,7 +359,6 @@ export default class Midi {
     const newTime = elapsed % (duration - durationOffset);
     this.startedAt = currentTime - newTime;
     this.previousTime = false;
-    this.state.loopProgress = newTime / (duration - durationOffset);
 
     let newIndex = notes.findIndex((note, i) => {
       const noteTime = this.ticksToSeconds(note.ticks);
@@ -366,17 +401,8 @@ export default class Midi {
     const { previousTime } = this;
     const { latency } = this.options;
     const { currentTime } = this.ctx;
-    const {
-      notes,
-      ticks,
-      durationTicks,
-      offsetTicks,
-      durationOffsetTicks,
-      currentIndex,
-      indexStart,
-      indexEnd,
-    } = this.state;
-    const nearZero = 0.01;
+    const { notes, indexStart, indexEnd } = this.state;
+    let { currentIndex } = this.state;
 
     if (previousTime !== false && previousTime === currentTime) return;
     this.previousTime = currentTime;
@@ -386,27 +412,18 @@ export default class Midi {
     const activeNotes = this.getActiveNotes();
     if (activeNotes.length <= 0) return;
 
-    const start = this.ticksToSeconds(ticks);
-    const duration = this.ticksToSeconds(durationTicks);
-    const startOffset = this.ticksToSeconds(offsetTicks);
-    const durationOffset = this.ticksToSeconds(durationOffsetTicks);
-    const end = start - startOffset + duration - durationOffset;
-
     if (this.boundsJustSet) {
       this.boundsJustSet = false;
       this.startedAt = currentTime;
     } else if (this.durationJustChanged) {
       this.durationJustChanged = false;
-      this.jumpToNote(currentTime, currentIndex);
+      const { lastNoteIndex, secondsUntilPlayLastNote } = this;
+      currentIndex = lastNoteIndex;
+      this.state.currentIndex = lastNoteIndex;
+      this.jumpToNote(currentTime, lastNoteIndex, secondsUntilPlayLastNote);
     } else if (this.wasLoopReset(previousTime, currentTime)) {
       this.startedAt = currentTime;
     }
-
-    const elapsedTotal = currentTime - this.startedAt;
-    const elapsedLoop = elapsedTotal % (duration - durationOffset);
-    const elapsedSong = start - startOffset + elapsedLoop;
-
-    this.state.loopProgress = elapsedLoop / (duration - durationOffset);
 
     // build a queue of notes to play in the future
     const queue = [];
@@ -426,20 +443,10 @@ export default class Midi {
         continue;
       }
 
-      // if note starts before this page, chop it to the beginning of the page
-      let noteDur = this.ticksToSeconds(note.durationTicks);
-      const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
-      const noteStart = Math.max(noteTime, start - startOffset);
-      if (noteStart > noteTime) noteDur = noteDur - (noteStart - noteTime);
-
-      // if note lasts longer than the page, chop it to the end of the page
-      const noteEnd = noteStart + noteDur;
-      if (noteEnd > end) noteDur = noteDur - (noteEnd - end);
-
-      // determine when the note should play (in the future)
-      let secondsUntilPlay = noteStart - elapsedSong;
-      if (secondsUntilPlay < 0 && secondsUntilPlay >= -nearZero)
-        secondsUntilPlay = 0;
+      const { secondsUntilPlay, noteDur } = this.getNoteSchedule(
+        index,
+        currentTime,
+      );
 
       // if it's within the latency, queue it
       if (secondsUntilPlay >= 0 && secondsUntilPlay <= latency) {
