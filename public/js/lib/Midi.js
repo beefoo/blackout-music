@@ -247,7 +247,7 @@ export default class Midi {
     this.isBusy = true;
     const { currentIndex } = this.state;
     const { currentTime } = this.ctx;
-    const { secondsUntilPlay, noteDur } = this.getNoteSchedule(
+    const { secondsUntilPlay } = this.getNoteSchedule(
       currentIndex,
       currentTime,
     );
@@ -495,15 +495,22 @@ export default class Midi {
     const notes = this.getActiveNotes();
     if (notes.length <= 0) return;
 
+    const { ticks, durationTicks } = this.state;
+    const endTicks = ticks + durationTicks;
     const firstNote = notes[0];
     const lastNote = notes[notes.length - 1];
     const offsetTicks = firstNote.offsetTicks;
     let durationOffsetTicks = lastNote.offsetTicks - firstNote.offsetTicks;
+    const lastNoteEndTicks = lastNote.ticks + lastNote.durationTicks;
 
     // if only a single note, pad it
     if (notes.length === 1) {
-      const durationTicks = firstNote.durationTicks * 2;
-      durationOffsetTicks = this.state.durationTicks - durationTicks;
+      const paddedDurationTicks = firstNote.durationTicks * 2;
+      durationOffsetTicks = this.state.durationTicks - paddedDurationTicks;
+
+      // chop off silence at the end
+    } else if (lastNoteEndTicks < endTicks - 1) {
+      durationOffsetTicks -= endTicks - lastNoteEndTicks;
     }
 
     this.state.offsetTicks = offsetTicks;
