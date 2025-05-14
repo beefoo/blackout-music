@@ -120,26 +120,8 @@ export default class Midi {
     this.ticksPerMeasure = this.ticksPerQNote * 4;
     // make some calculations
     this.measureCount = Math.ceil(midi.durationTicks / this.ticksPerMeasure);
-    const midiNotes = midi.tracks
-      .map((track) => track.notes.map((note) => note.midi))
-      .flat();
-    // const durTicks = midi.tracks
-    //   .map((track) =>
-    //     track.notes.map(
-    //       (note) => (note.durationTicks / midi.header.ppq) * 0.25,
-    //     ),
-    //   )
-    //   .flat();
-    this.minMidiNote = MathHelper.minList(midiNotes);
-    this.maxMidiNote = MathHelper.maxList(midiNotes);
-    this.midiNoteRows = this.maxMidiNote - this.minMidiNote + 1;
-    // this.minMidiDurTicks = MathHelper.minList(durTicks);
-    // this.maxMidiDurTicks = MathHelper.maxList(durTicks);
+
     console.log(`Duration: ${midi.duration}s, Measures: ${this.measureCount}`);
-    console.log(`Midi note rows: ${this.midiNoteRows}`);
-    // console.log(
-    //   `Dur tick range: ${this.minMidiDurTicks} - ${this.maxMidiDurTicks}`,
-    // );
 
     // flatten the notes
     const notes = midi.tracks
@@ -147,7 +129,7 @@ export default class Midi {
         return track.notes.map((note, j) => {
           return {
             name: note.name,
-            row: this.midiNoteRows - (note.midi - this.minMidiNote) - 1,
+            midi: note.midi,
             track: i,
             trackNoteIndex: j,
             active: true,

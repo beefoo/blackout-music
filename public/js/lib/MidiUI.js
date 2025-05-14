@@ -56,7 +56,6 @@ export default class MidiUI {
     this.cellsPerPage = segmentsPerQuarterNote * 4 * measuresPerPage;
     this.ticksPerPage = this.ticksPerCell * this.cellsPerPage;
     this.cellW = 100.0 / this.cellsPerPage;
-    this.cellH = 100.0 / midi.midiNoteRows;
     console.log(`Pages: ${this.pageCount}`);
     this.loadPage(0);
     this.renderPagination();
@@ -98,22 +97,50 @@ export default class MidiUI {
   }
 
   render() {
-    const { midi, $el, ticksPerCell, cellsPerPage, cellH, tickStart, tickEnd } =
-      this;
-    const { notes } = midi.state;
+    const { midi, $el, ticksPerCell, cellsPerPage, tickStart, tickEnd } = this;
 
-    let html = '';
+    // only show notes on this page
+    const notes = midi.state.notes.filter((note) => {
+      const { ticks, durationTicks } = note;
+      const endTicks = ticks + durationTicks;
+      return (
+        (ticks >= tickStart && ticks < tickEnd) ||
+        (endTicks >= tickStart && endTicks < tickEnd)
+      );
+    });
 
+    // no notes, return
+    if (notes.length <= 0) {
+      $el.innerHTML = html;
+      return;
+    }
+
+    // determine cell height
+    const midis = MathHelper.unique(notes.map((note) => note.midi));
+    const minNoteRows = 10;
+    const maxCellH = 100.0 / minNoteRows;
+    const cellH = Math.min(100.0 / midis.length, maxCellH);
+    const topOffset =
+      midis.length < minNoteRows ? (minNoteRows - midis.length) * 50.0 : 0;
+
+    // determine rows for each note
+    notes.sort((a, b) => a.midi - b.midi);
+    let row = -1;
+    let currentMidi = -1;
     notes.forEach((note, i) => {
+      if (note.midi !== currentMidi) {
+        row += 1;
+        currentMidi = note.midi;
+      }
+      notes[i].row = row;
+    });
+    notes.sort((a, b) => a.index - b.index);
+
+    // build html
+    let html = '';
+    notes.forEach((note) => {
       const { active, id, row, ticks, durationTicks } = note;
       const endTicks = ticks + durationTicks;
-      if (
-        !(
-          (ticks >= tickStart && ticks < tickEnd) ||
-          (endTicks >= tickStart && endTicks < tickEnd)
-        )
-      )
-        return;
       let cells = Math.max(Math.round(durationTicks / ticksPerCell), 1);
       let n = MathHelper.norm(ticks, tickStart, tickEnd);
 
@@ -132,7 +159,7 @@ export default class MidiUI {
       const cellStart = Math.round(n * (cellsPerPage - 1));
       const width = (cells / cellsPerPage) * 100;
       const left = (cellStart / cellsPerPage) * 100;
-      const top = row * cellH;
+      const top = row * cellH + topOffset;
       const activeLabel = active ? 'active' : '';
       html += `<button id="${id}" class="note ${activeLabel}" style="width: ${width}%; height: ${cellH}%; top: ${top}%; left: ${left}%;">`;
       for (let n = 0; n < cells; n++) {

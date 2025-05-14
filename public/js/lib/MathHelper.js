@@ -88,6 +88,14 @@ export default class MathHelper {
     );
   }
 
+  static unique(arr) {
+    const set = [];
+    arr.forEach((value) => {
+      if (!set.includes(value)) set.push(value);
+    });
+    return set;
+  }
+
   static within(num, min, max) {
     return num >= min && num <= max;
   }
