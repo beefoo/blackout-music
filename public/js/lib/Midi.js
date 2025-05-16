@@ -32,6 +32,8 @@ export default class Midi {
 
     this.$playButton = document.getElementById('toggle-play-button');
     this.$resetButton = document.getElementById('reset-button');
+    this.$everyOtherButton = document.getElementById('every-other-button');
+    this.$highLowButton = document.getElementById('high-low-button');
 
     this.ctx.suspend();
     this.loadListeners();
@@ -173,6 +175,12 @@ export default class Midi {
   loadListeners() {
     this.$playButton.addEventListener('click', (_event) => this.togglePlay());
     this.$resetButton.addEventListener('click', (_event) => this.reset());
+    this.$everyOtherButton.addEventListener('click', (_event) =>
+      this.setEveryOther(),
+    );
+    this.$highLowButton.addEventListener('click', (_event) =>
+      this.setHighLow(),
+    );
   }
 
   onFirstStart() {
@@ -268,7 +276,7 @@ export default class Midi {
       if (!active) {
         this.state.notes[i].active = true;
         const $el = document.getElementById(id);
-        $el.classList.add('active');
+        if ($el) $el.classList.add('active');
       }
     }
     this.queueRecalculateNotes();
@@ -315,6 +323,47 @@ export default class Midi {
     if (this.isPlaying) this.ctx.resume();
     this.isBusy = false;
     this.boundsJustSet = true;
+  }
+
+  setEveryOther() {
+    if (!this.isReady()) return;
+    if (!this.state) return;
+
+    const { indexStart, indexEnd } = this.state;
+    const first = this.state.notes[indexStart];
+    let isActive = !first.active;
+    for (let i = indexStart; i <= indexEnd; i += 1) {
+      const { id } = this.state.notes[i];
+      this.state.notes[i].active = isActive;
+      const $el = document.getElementById(id);
+      if ($el && isActive) $el.classList.add('active');
+      else if ($el) $el.classList.remove('active');
+      isActive = !isActive;
+    }
+    this.queueRecalculateNotes();
+  }
+
+  setHighLow() {
+    if (!this.isReady()) return;
+    if (!this.state) return;
+
+    const { indexStart, indexEnd } = this.state;
+    const notes = this.state.notes.filter(
+      (_note, i) => i >= indexStart && i <= indexEnd,
+    );
+    notes.sort((a, b) => b.midi - a.midi);
+    const first = notes[0];
+    const middleIndex = Math.round((notes.length - 1) * 0.5);
+    const firstIsActive = !first.active;
+    notes.forEach((note, i) => {
+      const { id, index } = note;
+      const isActive = i < middleIndex ? firstIsActive : !firstIsActive;
+      this.state.notes[index].active = isActive;
+      const $el = document.getElementById(id);
+      if ($el && isActive) $el.classList.add('active');
+      else if ($el) $el.classList.remove('active');
+    });
+    this.queueRecalculateNotes();
   }
 
   speed(deltaBpm) {
