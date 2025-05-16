@@ -31,9 +31,7 @@ export default class Midi {
     this.synth = new Synth();
 
     this.$playButton = document.getElementById('toggle-play-button');
-    this.$restartButton = document.getElementById('restart-button');
-    this.$backwardButton = document.getElementById('backward-button');
-    this.$forwardButton = document.getElementById('forward-button');
+    this.$resetButton = document.getElementById('reset-button');
 
     this.ctx.suspend();
     this.loadListeners();
@@ -174,9 +172,7 @@ export default class Midi {
 
   loadListeners() {
     this.$playButton.addEventListener('click', (_event) => this.togglePlay());
-    this.$restartButton.addEventListener('click', (_event) => this.restart());
-    this.$backwardButton.addEventListener('click', (_event) => this.skip(-5));
-    this.$forwardButton.addEventListener('click', (_event) => this.skip(5));
+    this.$resetButton.addEventListener('click', (_event) => this.reset());
   }
 
   onFirstStart() {
@@ -240,7 +236,7 @@ export default class Midi {
         if (a.active) return -1;
         else if (b.active) return 1;
       } else return a.ticks - b.ticks;
-      return 0;
+      return a.index - b.index;
     });
     const noteCount = notes.length;
     let offsetTicks = 0;
@@ -262,16 +258,20 @@ export default class Midi {
     this.isBusy = false;
   }
 
-  restart() {
+  reset() {
     if (!this.isReady()) return;
-    if (!this.firstStarted) return;
-    this.isBusy = true;
-    if (this.state) {
-      this.state.currentIndex = this.state.indexStart;
+    if (!this.state) return;
+
+    const { indexStart, indexEnd } = this.state;
+    for (let i = indexStart; i <= indexEnd; i += 1) {
+      const { active, id } = this.state.notes[i];
+      if (!active) {
+        this.state.notes[i].active = true;
+        const $el = document.getElementById(id);
+        $el.classList.add('active');
+      }
     }
-    this.startedAt = this.isPlaying ? this.ctx.currentTime : false;
-    this.previousTime = false;
-    this.isBusy = false;
+    this.queueRecalculateNotes();
   }
 
   scheduleNote(note, secondsInTheFuture) {
@@ -315,41 +315,6 @@ export default class Midi {
     if (this.isPlaying) this.ctx.resume();
     this.isBusy = false;
     this.boundsJustSet = true;
-  }
-
-  skip(deltaSeconds) {
-    if (!this.isReady()) return;
-    if (!this.firstStarted) return;
-
-    this.isBusy = true;
-
-    const {
-      notes,
-      ticks,
-      durationTicks,
-      durationOffsetTicks,
-      indexStart,
-      indexEnd,
-    } = this.state;
-    const { currentTime } = this.ctx;
-
-    const start = this.ticksToSeconds(ticks);
-    const duration = this.ticksToSeconds(durationTicks);
-    const durationOffset = this.ticksToSeconds(durationOffsetTicks);
-
-    const elapsed = Math.max(currentTime - this.startedAt + deltaSeconds, 0);
-    const newTime = elapsed % (duration - durationOffset);
-    this.startedAt = currentTime - newTime;
-    this.previousTime = false;
-
-    let newIndex = notes.findIndex((note, i) => {
-      const noteTime = this.ticksToSeconds(note.ticks);
-      return noteTime > newTime + start && i >= indexStart && i < indexEnd;
-    });
-    newIndex = Math.max(newIndex, 0);
-    this.state.currentIndex = newIndex;
-
-    this.isBusy = false;
   }
 
   speed(deltaBpm) {

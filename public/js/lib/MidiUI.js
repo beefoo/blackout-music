@@ -117,14 +117,14 @@ export default class MidiUI {
 
     // determine cell height
     const midis = MathHelper.unique(notes.map((note) => note.midi));
-    const minNoteRows = 10;
+    const minNoteRows = 12;
     const maxCellH = 100.0 / minNoteRows;
     const cellH = Math.min(100.0 / midis.length, maxCellH);
     const topOffset =
       midis.length < minNoteRows ? (minNoteRows - midis.length) * 50.0 : 0;
 
     // determine rows for each note
-    notes.sort((a, b) => a.midi - b.midi);
+    notes.sort((a, b) => b.midi - a.midi);
     let row = -1;
     let currentMidi = -1;
     notes.forEach((note, i) => {
