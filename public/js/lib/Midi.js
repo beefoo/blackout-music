@@ -248,15 +248,20 @@ export default class Midi {
     });
     const noteCount = notes.length;
     let offsetTicks = 0;
+    let lastActiveEndTicks = 0;
     notes.forEach((note, index) => {
-      const { active, ticks } = note;
+      const { active, ticks, durationTicks } = note;
+      const endTicks = ticks + durationTicks;
       const i = note.index;
       // offset time based on previously inactive notes
       this.state.notes[i].offsetTicks = offsetTicks;
       // increase offset of time if note is not active
-      if (!active && index < noteCount - 1) {
+      if (!active && index < noteCount - 1 && endTicks > lastActiveEndTicks) {
         const nextNote = notes[index + 1];
         offsetTicks += nextNote.ticks - ticks;
+      }
+      if (active) {
+        lastActiveEndTicks = Math.max(lastActiveEndTicks, endTicks);
       }
     });
     this.updateOffset();
