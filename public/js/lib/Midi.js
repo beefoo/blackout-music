@@ -495,7 +495,7 @@ export default class Midi {
     const endTicks = ticks + durationTicks;
     const firstNote = notes[0];
     const lastNote = notes[notes.length - 1];
-    const offsetTicks = firstNote.offsetTicks;
+    let offsetTicks = firstNote.offsetTicks;
     let durationOffsetTicks = lastNote.offsetTicks - firstNote.offsetTicks;
     const lastNoteEndTicks = lastNote.ticks + lastNote.durationTicks;
 
@@ -507,6 +507,13 @@ export default class Midi {
       // chop off silence at the end
     } else if (lastNoteEndTicks < endTicks - 1) {
       durationOffsetTicks -= endTicks - lastNoteEndTicks;
+    }
+
+    // chop off beginning silence
+    if (firstNote.ticks > ticks) {
+      const delta = firstNote.ticks - ticks;
+      durationOffsetTicks += delta;
+      offsetTicks -= delta;
     }
 
     this.state.offsetTicks = offsetTicks;
