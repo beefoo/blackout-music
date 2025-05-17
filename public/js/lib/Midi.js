@@ -27,6 +27,7 @@ export default class Midi {
     this.boundsJustSet = false;
     this.durationJustChanged = false;
     this.previousTime = false;
+    this.wasPlayingBeforeBlur = false;
     this.ctx = this.options.audioContext || new AudioContext();
     this.synth = new Synth();
 
@@ -181,6 +182,8 @@ export default class Midi {
     this.$highLowButton.addEventListener('click', (_event) =>
       this.setHighLow(),
     );
+    window.addEventListener('blur', (_event) => this.onWindowBlur());
+    window.addEventListener('focus', (_event) => this.onWindowFocus());
   }
 
   onFirstStart() {
@@ -188,6 +191,26 @@ export default class Midi {
     this.synth.load();
     this.startedAt = this.ctx.currentTime;
     this.step();
+  }
+
+  onWindowBlur() {
+    if (!this.isReady()) return;
+
+    if (this.isPlaying) {
+      this.wasPlayingBeforeBlur = true;
+      this.pause();
+      return;
+    }
+
+    this.wasPlayingBeforeBlur = false;
+  }
+
+  onWindowFocus() {
+    const { wasPlayingBeforeBlur } = this;
+    this.wasPlayingBeforeBlur = false;
+    if (!this.isReady() || this.isPlaying) return;
+
+    if (wasPlayingBeforeBlur) this.play();
   }
 
   pause() {
