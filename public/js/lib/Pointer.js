@@ -29,6 +29,7 @@ export default class Pointer {
 
   static getChildFromEvent(event, selector) {
     const $target = document.elementFromPoint(event.clientX, event.clientY);
+    if (!$target) return false;
     return $target.closest(selector);
   }
 

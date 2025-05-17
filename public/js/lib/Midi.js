@@ -18,7 +18,6 @@ export default class Midi {
   init() {
     this.isPlaying = false;
     this.isBusy = false;
-    this.loadedMidi = false;
     this.startedAt = false;
     this.state = false;
     this.recalculateTimeout = false;
@@ -96,7 +95,7 @@ export default class Midi {
   }
 
   isReady() {
-    return this.loadedMidi !== false && !this.isBusy;
+    return this.state !== false && !this.isBusy;
   }
 
   jumpToNote(currentTime, noteIndex, secondsUntilPlay) {
@@ -116,7 +115,6 @@ export default class Midi {
     this.isBusy = true;
     const midi = await ToneMidi.fromUrl(url);
     console.log(midi);
-    this.loadedMidi = midi;
     this.ticksPerQNote = midi.header.ppq;
     this.ticksPerMeasure = this.ticksPerQNote * 4;
     // make some calculations
@@ -159,7 +157,9 @@ export default class Midi {
       ticks: 0,
       offsetTicks: 0,
       durationTicks: midi.durationTicks,
+      totalDurationTicks: midi.durationTicks,
       durationOffsetTicks: 0,
+      ppq: midi.header.ppq,
       currentIndex: 0,
       indexStart: 0,
       indexEnd: notes.length - 1,
@@ -397,8 +397,8 @@ export default class Midi {
   speed(deltaBpm) {
     if (!this.isReady()) return;
     this.isBusy = true;
-    const { bpm } = this.state;
-    const { duration } = this.loadedMidi;
+    const { bpm, durationTicks } = this.state;
+    const duration = this.ticksToSeconds(durationTicks);
     const { currentTime } = this.ctx;
 
     const elapsed = currentTime - this.startedAt;
@@ -406,15 +406,14 @@ export default class Midi {
     const progress = time / duration;
 
     const newBpm = MathHelper.clamp(bpm + deltaBpm, 40, 240);
-    this.loadedMidi.header.setTempo(newBpm);
-    const newDuration = this.loadedMidi.duration;
-    const newTime = newDuration * progress;
-
+    this.state.bpm = newBpm;
     console.log(`New BPM: ${newBpm}`);
 
+    const newDuration = this.ticksToSeconds(durationTicks);
+    const newTime = newDuration * progress;
     this.startedAt = currentTime - newTime;
     this.previousTime = false;
-    this.state.bpm = newBpm;
+
     this.isBusy = false;
   }
 
@@ -500,8 +499,8 @@ export default class Midi {
   }
 
   ticksToSeconds(ticks) {
-    const { bpm } = this.state;
-    const beats = ticks / this.loadedMidi.header.ppq;
+    const { bpm, ppq } = this.state;
+    const beats = ticks / ppq;
     return (60 / bpm) * beats;
   }
 

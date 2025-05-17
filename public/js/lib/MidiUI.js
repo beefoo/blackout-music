@@ -79,7 +79,7 @@ export default class MidiUI {
     this.page = page;
     this.tickStart = page * measuresPerPage * ticksPerMeasure;
     this.tickEnd = (page + 1) * measuresPerPage * ticksPerMeasure;
-    this.tickEnd = Math.min(this.tickEnd, this.midi.loadedMidi.durationTicks);
+    this.tickEnd = Math.min(this.tickEnd, this.midi.state.totalDurationTicks);
     this.render();
 
     if (page === 0) this.$pageLeft.setAttribute('disabled', 'disabled');
@@ -111,7 +111,7 @@ export default class MidiUI {
 
     // no notes, return
     if (notes.length <= 0) {
-      $el.innerHTML = html;
+      $el.innerHTML = '';
       return;
     }
 
