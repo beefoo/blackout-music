@@ -12,8 +12,10 @@ export default class MidiSelector {
   }
 
   init() {
+    this.id = this.options.c;
     this.$el = document.getElementById('select-composition');
     this.scores = this.options.scores;
+    if (this.id === '') this.id = this.scores[0].id;
     this.loadUI();
     this.loadListeners();
   }
@@ -25,7 +27,7 @@ export default class MidiSelector {
   }
 
   loadUI() {
-    const selected = this.options.c;
+    const selected = this.id;
     let html = '';
     this.scores.forEach((score) => {
       const title = score.alt !== '' ? score.alt : score.title;
@@ -38,6 +40,7 @@ export default class MidiSelector {
   onSelect() {
     const id = this.$el.value;
     const url = `${this.options.midiPath}${id}.mid`;
+    this.id = id;
     this.options.onSelectMidi(url);
   }
 }

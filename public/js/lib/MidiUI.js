@@ -6,6 +6,7 @@ export default class MidiUI {
       debug: false,
       el: 'composition',
       measuresPerPage: 4,
+      page: 1,
       onChangePage: () => {},
       segmentsPerQuarterNote: 8, // 2 = 1/8th, 4 = 1/16th, 8 = 1/32nd, 16 = 1/64th
     };
@@ -18,6 +19,8 @@ export default class MidiUI {
     this.$pageLeft = document.getElementById('page-left');
     this.$pageRight = document.getElementById('page-right');
     this.$select = document.getElementById('select-page');
+    this.page = this.options.page - 1;
+    this.firstLoad = true;
     this.loadListeners();
   }
 
@@ -57,7 +60,11 @@ export default class MidiUI {
     this.ticksPerPage = this.ticksPerCell * this.cellsPerPage;
     this.cellW = 100.0 / this.cellsPerPage;
     console.log(`Pages: ${this.pageCount}`);
-    this.loadPage(0);
+    if (this.firstLoad) {
+      this.firstLoad = false;
+      this.$select.value = this.page;
+    } else this.page = 0;
+    this.loadPage(this.page);
     this.renderPagination();
   }
 

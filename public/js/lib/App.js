@@ -2,6 +2,7 @@ import Midi from './Midi.js';
 import MidiSelector from './MidiSelector.js';
 import MidiUI from './MidiUI.js';
 import PointerManager from './PointerManager.js';
+import StringHelper from './StringHelper.js';
 
 export default class App {
   constructor(options = {}) {
@@ -14,7 +15,7 @@ export default class App {
 
   init() {
     const { options } = this;
-    const selector = new MidiSelector(
+    this.selector = new MidiSelector(
       Object.assign(options, {
         onSelectMidi: (url) => {
           this.onSelectMidi(url);
@@ -45,12 +46,13 @@ export default class App {
         this.toggleNoteFromPointer(pointer);
       },
     });
-    selector.onSelect();
+    this.selector.onSelect();
   }
 
   onChangePage() {
     const { tickStart, tickEnd } = this.ui;
     this.midi.setBounds(tickStart, tickEnd);
+    this.updateURL();
   }
 
   onPlayNote(note, noteState) {
@@ -61,6 +63,7 @@ export default class App {
     const loaded = await this.midi.loadFromURL(url);
     if (!loaded) return;
     this.ui.load(this.midi);
+    this.updateURL();
   }
 
   toggleNoteFromPointer(pointer) {
@@ -74,5 +77,12 @@ export default class App {
     pointer.$target.classList.toggle('active');
     const isActive = pointer.$target.classList.contains('active');
     this.midi.activateNote(i, isActive);
+  }
+
+  updateURL() {
+    const params = {};
+    params.c = this.selector.id;
+    params.page = this.ui.page + 1;
+    StringHelper.pushURLState(params, true);
   }
 }
