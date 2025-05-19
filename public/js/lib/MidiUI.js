@@ -53,19 +53,20 @@ export default class MidiUI {
 
   load(midi) {
     const { measuresPerPage, segmentsPerQuarterNote } = this.options;
+    const { measureCount, ppq } = midi.state;
+    const { firstLoad } = this;
     this.midi = midi;
-    this.pageCount = Math.ceil((1.0 * midi.measureCount) / measuresPerPage);
-    this.ticksPerCell = midi.ticksPerQNote / segmentsPerQuarterNote;
+    this.pageCount = Math.ceil((1.0 * measureCount) / measuresPerPage);
+    this.ticksPerCell = ppq / segmentsPerQuarterNote;
     this.cellsPerPage = segmentsPerQuarterNote * 4 * measuresPerPage;
     this.ticksPerPage = this.ticksPerCell * this.cellsPerPage;
     this.cellW = 100.0 / this.cellsPerPage;
     console.log(`Pages: ${this.pageCount}`);
-    if (this.firstLoad) {
-      this.firstLoad = false;
-      this.$select.value = this.page;
-    } else this.page = 0;
+    if (firstLoad) this.firstLoad = false;
+    else this.page = 0;
     this.loadPage(this.page);
     this.renderPagination();
+    if (firstLoad) this.$select.value = this.page;
   }
 
   loadListeners() {
@@ -82,7 +83,7 @@ export default class MidiUI {
 
   loadPage(page) {
     const { measuresPerPage } = this.options;
-    const { ticksPerMeasure } = this.midi;
+    const { ticksPerMeasure } = this.midi.state;
     this.page = page;
     this.tickStart = page * measuresPerPage * ticksPerMeasure;
     this.tickEnd = (page + 1) * measuresPerPage * ticksPerMeasure;

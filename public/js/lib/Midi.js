@@ -1,6 +1,7 @@
 import { Midi as ToneMidi } from '../vendor/Tone-midi.js';
 import MathHelper from './MathHelper.js';
 import Synth from './Synth.js';
+import Throttler from './Throttler.js';
 
 export default class Midi {
   constructor(options = {}) {
@@ -19,9 +20,8 @@ export default class Midi {
     this.isPlaying = false;
     this.isBusy = false;
     this.startedAt = false;
+    this.loadedStates = {};
     this.state = false;
-    this.recalculateTimeout = false;
-    this.queueRecalculation = false;
     this.firstStarted = false;
     this.boundsJustSet = false;
     this.durationJustChanged = false;
@@ -111,16 +111,27 @@ export default class Midi {
     this.previousTime = false;
   }
 
+  loadFromSession(url) {
+    this.state = this.loadedStates[url];
+    console.log(`Loaded ${url} from session`);
+    if (this.isPlaying) this.startedAt = this.ctx.currentTime;
+    else this.startedAt = 0;
+    this.previousTime = false;
+    return true;
+  }
+
   async loadFromURL(url) {
+    this.url = url;
+    if (url in this.loadedStates) return this.loadFromSession(url);
     this.isBusy = true;
     const midi = await ToneMidi.fromUrl(url);
     console.log(midi);
-    this.ticksPerQNote = midi.header.ppq;
-    this.ticksPerMeasure = this.ticksPerQNote * 4;
+    const ticksPerQNote = midi.header.ppq;
+    const ticksPerMeasure = ticksPerQNote * 4;
     // make some calculations
-    this.measureCount = Math.ceil(midi.durationTicks / this.ticksPerMeasure);
+    const measureCount = Math.ceil(midi.durationTicks / ticksPerMeasure);
 
-    console.log(`Duration: ${midi.duration}s, Measures: ${this.measureCount}`);
+    console.log(`Duration: ${midi.duration}s, Measures: ${measureCount}`);
 
     // flatten the notes
     const notes = midi.tracks
@@ -159,7 +170,9 @@ export default class Midi {
       durationTicks: midi.durationTicks,
       totalDurationTicks: midi.durationTicks,
       durationOffsetTicks: 0,
-      ppq: midi.header.ppq,
+      ppq: ticksPerQNote,
+      ticksPerMeasure,
+      measureCount,
       currentIndex: 0,
       indexStart: 0,
       indexEnd: notes.length - 1,
@@ -170,6 +183,7 @@ export default class Midi {
     else this.startedAt = 0;
     this.previousTime = false;
     this.isBusy = false;
+    this.updateStorage();
     return true;
   }
 
@@ -234,22 +248,17 @@ export default class Midi {
   queueRecalculateNotes() {
     if (!this.isReady()) return;
 
-    // only recalculate notes at most once per every wait milliseconds
-    const waitMs = Math.round(this.options.throttle * 1000);
-
-    if (this.recalculateTimeout === false) {
-      this.recalculateOffsets();
-      // wait some time before next calculation
-      this.recalculateTimeout = setTimeout(() => {
-        this.recalculateTimeout = false;
-        if (this.queueRecalculation) {
-          this.queueRecalculation = false;
-          this.queueRecalculateNotes();
-        }
-      }, waitMs);
-      return;
+    if (!this.recalcThrottler) {
+      const throttled = () => {
+        this.recalculateOffsets();
+      };
+      this.recalcThrottler = new Throttler({
+        throttled,
+        seconds: this.options.throttle,
+      });
     }
-    this.queueRecalculation = true;
+
+    this.recalcThrottler.queue();
   }
 
   recalculateOffsets() {
@@ -292,6 +301,7 @@ export default class Midi {
     this.lastNoteIndex = currentIndex;
     this.secondsUntilPlayLastNote = secondsUntilPlay;
     this.isBusy = false;
+    this.updateStorage();
   }
 
   reset() {
@@ -414,6 +424,7 @@ export default class Midi {
     this.startedAt = currentTime - newTime;
     this.previousTime = false;
 
+    this.updateStorage();
     this.isBusy = false;
   }
 
@@ -510,6 +521,22 @@ export default class Midi {
     const isPlaying = this.$playButton.classList.contains('playing');
     if (isPlaying) this.play();
     else this.pause();
+  }
+
+  updateStorage() {
+    if (!this.isReady()) return;
+
+    if (!this.storageThrottler) {
+      const throttled = () => {
+        this.loadedStates[this.url] = structuredClone(this.state);
+      };
+      this.storageThrottler = new Throttler({
+        throttled,
+        seconds: 1.0,
+      });
+    }
+
+    this.storageThrottler.queue();
   }
 
   // determine the offset of the current page from de-activated notes
