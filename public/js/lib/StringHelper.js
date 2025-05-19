@@ -1,6 +1,12 @@
 import MathHelper from './MathHelper.js';
 
 export default class StringHelper {
+  static loadStorageData(key, defaultValue = false) {
+    const item = localStorage.getItem(key);
+    if (item) return JSON.parse(item);
+    return defaultValue;
+  }
+
   static pushURLState(data, replace = false) {
     if (window.history.pushState) {
       const baseUrl = window.location.href.split('?')[0];
@@ -32,5 +38,9 @@ export default class StringHelper {
       parsed[key] = MathHelper.parseNumber(value);
     }
     return parsed;
+  }
+
+  static saveStorageData(key, data) {
+    localStorage.setItem(key, JSON.stringify(data));
   }
 }

@@ -1,5 +1,6 @@
 import { Midi as ToneMidi } from '../vendor/Tone-midi.js';
 import MathHelper from './MathHelper.js';
+import StringHelper from './StringHelper.js';
 import Synth from './Synth.js';
 import Throttler from './Throttler.js';
 
@@ -9,6 +10,7 @@ export default class Midi {
       audioContext: false,
       debug: false,
       latency: 0.1,
+      localStorageKey: 'midis',
       onPlayNote: (note) => {},
       throttle: 0.3,
     };
@@ -20,7 +22,10 @@ export default class Midi {
     this.isPlaying = false;
     this.isBusy = false;
     this.startedAt = false;
-    this.loadedStates = {};
+    this.loadedStates = StringHelper.loadStorageData(
+      this.options.localStorageKey,
+      {},
+    );
     this.state = false;
     this.firstStarted = false;
     this.boundsJustSet = false;
@@ -528,7 +533,12 @@ export default class Midi {
 
     if (!this.storageThrottler) {
       const throttled = () => {
-        this.loadedStates[this.url] = structuredClone(this.state);
+        const state = structuredClone(this.state);
+        this.loadedStates[this.url] = state;
+        StringHelper.saveStorageData(
+          this.options.localStorageKey,
+          this.loadedStates,
+        );
       };
       this.storageThrottler = new Throttler({
         throttled,
