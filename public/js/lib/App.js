@@ -40,10 +40,10 @@ export default class App {
       childSelector: '.note',
       target: 'composition',
       onDragEnter: (pointer) => {
-        this.toggleNoteFromPointer(pointer);
+        this.onPointerTriggerNote(pointer);
       },
       onTap: (pointer) => {
-        this.toggleNoteFromPointer(pointer);
+        this.onPointerTriggerNote(pointer);
       },
     });
     this.selector.onSelect();
@@ -59,24 +59,26 @@ export default class App {
     this.ui.highlight(note);
   }
 
-  async onSelectMidi(url) {
-    const loaded = await this.midi.loadFromURL(url);
-    if (!loaded) return;
-    this.ui.load(this.midi);
-    this.updateURL();
-  }
-
-  toggleNoteFromPointer(pointer) {
+  onPointerTriggerNote(pointer) {
     if (!pointer.$target || !pointer.$target.hasAttribute('id')) return;
     const id = pointer.$target.id;
     if (!id.startsWith('note-')) return;
     const [_note, noteIndex] = id.split('-');
     const i = parseInt(noteIndex);
 
-    // toggle active
-    pointer.$target.classList.toggle('active');
+    // de-activate note
     const isActive = pointer.$target.classList.contains('active');
-    this.midi.activateNote(i, isActive);
+    if (isActive) {
+      pointer.$target.classList.remove('active');
+      this.midi.activateNote(i, false);
+    }
+  }
+
+  async onSelectMidi(url) {
+    const loaded = await this.midi.loadFromURL(url);
+    if (!loaded) return;
+    this.ui.load(this.midi);
+    this.updateURL();
   }
 
   updateURL() {
