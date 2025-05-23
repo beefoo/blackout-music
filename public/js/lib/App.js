@@ -42,6 +42,10 @@ export default class App {
       target: 'composition',
       onDrag: (pointer) => {
         this.onPointerTriggerNote(pointer);
+        this.onPointerDrag(pointer);
+      },
+      onDragEnd: (pointer) => {
+        this.onPointerDragEnd(pointer);
       },
       onTap: (pointer) => {
         this.onPointerTriggerNote(pointer);
@@ -58,6 +62,33 @@ export default class App {
 
   onPlayNote(note) {
     this.ui.highlight(note);
+  }
+
+  onPointerDrag(pointer) {
+    if (pointer.pointerType !== 'touch') return;
+    const elId = `note-cursor-${pointer.id}`;
+    const radius = this.pointers.options.childSelectorRadius;
+    let $el = document.getElementById(elId);
+    if (!$el) {
+      $el = document.createElement('div');
+      $el.id = elId;
+      $el.classList.add('note-cursor');
+      document.body.appendChild($el);
+    }
+    const { posLast } = pointer;
+    if (!posLast) return;
+    const x = posLast.x - radius;
+    const y = posLast.y - radius;
+    $el.style.top = `${y}px`;
+    $el.style.left = `${x}px`;
+    if (!$el.classList.contains('active')) $el.classList.add('active');
+  }
+
+  onPointerDragEnd(pointer) {
+    if (pointer.pointerType !== 'touch') return;
+    const elId = `note-cursor-${pointer.id}`;
+    const $el = document.getElementById(elId);
+    if ($el) $el.classList.remove('active');
   }
 
   onPointerTriggerNote(pointer) {

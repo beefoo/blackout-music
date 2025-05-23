@@ -25,6 +25,7 @@ export default class Pointer {
     this.posLast = false;
     this.delta = false;
     this.deltaFromStart = false;
+    this.pointerType = false;
     this.$targets = [];
     this.data = {};
     if (event) this.onStart(event);
@@ -106,6 +107,7 @@ export default class Pointer {
     this.started = Date.now();
     this.posStart = this.constructor.getPositionFromEvent(event);
     this.posLast = structuredClone(this.posStart);
+    this.pointerType = event.pointerType;
     this.$targets = [];
 
     // check to see if it is primary pointer
