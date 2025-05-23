@@ -38,8 +38,9 @@ export default class App {
     );
     this.pointers = new PointerManager({
       childSelector: '.note',
+      childSelectorRadius: 24,
       target: 'composition',
-      onDragEnter: (pointer) => {
+      onDrag: (pointer) => {
         this.onPointerTriggerNote(pointer);
       },
       onTap: (pointer) => {
@@ -55,23 +56,28 @@ export default class App {
     this.updateURL();
   }
 
-  onPlayNote(note, noteState) {
+  onPlayNote(note) {
     this.ui.highlight(note);
   }
 
   onPointerTriggerNote(pointer) {
-    if (!pointer.$target || !pointer.$target.hasAttribute('id')) return;
-    const id = pointer.$target.id;
-    if (!id.startsWith('note-')) return;
-    const [_note, noteIndex] = id.split('-');
-    const i = parseInt(noteIndex);
+    const { $targets } = pointer;
+    if ($targets.length <= 0) return;
 
-    // de-activate note
-    const isActive = pointer.$target.classList.contains('active');
-    if (isActive) {
-      pointer.$target.classList.remove('active');
-      this.midi.activateNote(i, false);
-    }
+    $targets.forEach(($target) => {
+      if (!$target.hasAttribute('id')) return;
+      const { id } = $target;
+      if (!id.startsWith('note-')) return;
+      const [_note, noteIndex] = id.split('-');
+      const i = parseInt(noteIndex);
+
+      // de-activate note
+      const isActive = $target.classList.contains('active');
+      if (isActive) {
+        $target.classList.remove('active');
+        this.midi.activateNote(i, false);
+      }
+    });
   }
 
   async onSelectMidi(url) {

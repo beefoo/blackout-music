@@ -4,6 +4,7 @@ export default class PointerManager {
   constructor(options = {}) {
     const defaults = {
       childSelector: false,
+      childSelectorRadius: false,
       debug: false,
       onDrag: (pointer) => {},
       onDragEnd: (pointer) => {},
@@ -24,7 +25,7 @@ export default class PointerManager {
 
   getPointer(event, reset = false, mustExist = false) {
     const { pointers } = this;
-    const { childSelector } = this.options;
+    const { childSelector, childSelectorRadius } = this.options;
     const pointerId = this.constructor.getPointerId(event);
 
     let pointer = false;
@@ -33,8 +34,10 @@ export default class PointerManager {
     } else if (reset || !mustExist) {
       const options = {
         childSelector,
+        childSelectorRadius,
         id: pointerId,
         event,
+        $parent: this.$target,
       };
       pointer = new Pointer(options);
       if (pointer.isValid) this.pointers[pointerId] = pointer;
@@ -71,9 +74,8 @@ export default class PointerManager {
   onPointerMove(event) {
     const pointer = this.getPointer(event, false, true);
     if (!pointer) return;
-    const targetChanged = pointer.onMove(event);
+    pointer.onMove(event);
     this.options.onDrag(pointer);
-    if (targetChanged) this.options.onDragEnter(pointer);
   }
 
   onPointerUp(event) {

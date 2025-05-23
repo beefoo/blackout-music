@@ -72,6 +72,29 @@ export default class MathHelper {
     return Math.floor(Math.random() * (maxValue - minValue + 1) + minValue);
   }
 
+  static rectCircleColliding(circle, rect) {
+    const distX = Math.abs(circle.x - rect.x - rect.width / 2);
+    const distY = Math.abs(circle.y - rect.y - rect.height / 2);
+
+    if (distX > rect.width / 2 + circle.r) {
+      return false;
+    }
+    if (distY > rect.height / 2 + circle.r) {
+      return false;
+    }
+
+    if (distX <= rect.width / 2) {
+      return true;
+    }
+    if (distY <= rect.height / 2) {
+      return true;
+    }
+
+    const dx = distX - rect.width / 2;
+    const dy = distY - rect.height / 2;
+    return dx * dx + dy * dy <= circle.r * circle.r;
+  }
+
   static round(value, precision) {
     return Number(value).toFixed(precision);
   }

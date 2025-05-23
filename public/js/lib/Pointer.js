@@ -1,12 +1,15 @@
+import MathHelper from './MathHelper.js';
+
 export default class Pointer {
   constructor(options = {}) {
     const defaults = {
       childSelector: false,
+      childSelectorRadius: false,
       debug: false,
       event: false,
       id: '0',
+      $parent: false,
       tapThreshold: 500,
-      $target: false,
     };
     this.options = Object.assign(defaults, options);
     this.init();
@@ -22,15 +25,31 @@ export default class Pointer {
     this.posLast = false;
     this.delta = false;
     this.deltaFromStart = false;
-    this.$target = false;
+    this.$targets = [];
     this.data = {};
     if (event) this.onStart(event);
   }
 
-  static getChildFromEvent(event, selector) {
-    const $target = document.elementFromPoint(event.clientX, event.clientY);
-    if (!$target) return false;
-    return $target.closest(selector);
+  getTargetsFromEvent(event, selector, radius = false) {
+    let $targets = [];
+    if (radius) {
+      const { $parent } = this.options;
+      const circle = { x: event.clientX, y: event.clientY, r: radius };
+      const $children = $parent.querySelectorAll(selector);
+      $children.forEach(($child) => {
+        const rect = $child.getBoundingClientRect();
+        if (MathHelper.rectCircleColliding(circle, rect)) {
+          $targets.push($child);
+        }
+      });
+    } else {
+      const $target = document.elementFromPoint(event.clientX, event.clientY);
+      if ($target) {
+        const $match = $target.closest(selector);
+        if ($match) $targets.push($match);
+      }
+    }
+    return $targets;
   }
 
   getData(key) {
@@ -70,21 +89,15 @@ export default class Pointer {
     };
     this.posLast = pos;
     // update target
-    const { childSelector } = this.options;
-    const $prevTarget = this.$target;
-    const prevTargetId =
-      $prevTarget && $prevTarget.hasAttribute('id') ? $prevTarget.id : false;
+    const { childSelector, childSelectorRadius } = this.options;
     if (childSelector) {
-      const $target = this.constructor.getChildFromEvent(event, childSelector);
-      if ($target && $target.hasAttribute('id')) {
-        const targetId = $target.id;
-        if (targetId !== prevTargetId) {
-          this.$target = $target;
-          return true;
-        }
-      } else this.$target = false;
+      const $targets = this.getTargetsFromEvent(
+        event,
+        childSelector,
+        childSelectorRadius,
+      );
+      this.$targets = $targets;
     }
-    return false;
   }
 
   onStart(event) {
@@ -93,7 +106,7 @@ export default class Pointer {
     this.started = Date.now();
     this.posStart = this.constructor.getPositionFromEvent(event);
     this.posLast = structuredClone(this.posStart);
-    this.$target = false;
+    this.$targets = [];
 
     // check to see if it is primary pointer
     if (event && event.originalEvent) {
@@ -101,10 +114,14 @@ export default class Pointer {
     } else if (event.isPrimary) this.isPrimary = event.isPrimary;
 
     // check to see if there's a child selector
-    const { childSelector } = this.options;
+    const { childSelector, childSelectorRadius } = this.options;
     if (childSelector) {
-      const $target = this.constructor.getChildFromEvent(event, childSelector);
-      if ($target) this.$target = $target;
+      const $targets = this.getTargetsFromEvent(
+        event,
+        childSelector,
+        childSelectorRadius,
+      );
+      this.$targets = $targets;
     }
     this.isValid = true;
   }
@@ -121,9 +138,5 @@ export default class Pointer {
 
   setData(key, data) {
     this.data[key] = data;
-  }
-
-  setTarget($el) {
-    this.$target = $el;
   }
 }
