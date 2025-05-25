@@ -110,6 +110,7 @@ li {
   left: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .header {
@@ -143,7 +144,6 @@ li {
   display: flex;
   flex-direction: column;
   border-radius: 12px;
-
   border: 3px solid var(--base-dark);
   box-sizing: border-box;
   margin: 12px 12px 0;
@@ -294,6 +294,80 @@ body.playing .note.active .cell.highlight {
 }
 #forward-button .number {
   right: 8px;
+}
+
+.panel {
+  z-index: 99999;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  box-sizing: border-box;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+}
+.panel.active {
+  display: flex;
+}
+.close-panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+.close-panel svg {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+.panel h2,
+.panel form {
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 800px;
+}
+.panel h2 {
+  margin-bottom: 0.2rem;
+}
+
+.panel fieldset {
+  padding: 0.33rem 0.667rem;
+  margin-bottom: 0.667rem;
+  background: var(--base-darkest);
+}
+.input-group {
+  display: flex;
+  margin-bottom: 0.2rem;
+}
+.input-group:last-child {
+  margin: 0;
+}
+.input-group label {
+  flex-basis: 120px;
+}
+.input-group input {
+  flex-grow: 1;
+}
+.input-group .value {
+  flex-basis: 60px;
+  text-align: right;
+  color: var(--primary-lighter);
+  font-weight: bold;
+}
+input[type='range'] {
+  accent-color: var(--secondary-light);
+}
+.radio-fieldset label {
+  margin-right: 0.5rem;
+}
+.radio-fieldset label input {
+  margin-right: 0.2rem;
+  accent-color: var(--secondary-light);
 }
 
 .visually-hidden {
