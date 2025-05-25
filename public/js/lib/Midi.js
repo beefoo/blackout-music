@@ -40,6 +40,9 @@ export default class Midi {
     this.$everyOtherButton = document.getElementById('every-other-button');
     this.$highLowButton = document.getElementById('high-low-button');
 
+    this.$bpm = document.getElementById('bpm-input');
+    this.$bpmValue = document.getElementById('bpm-value');
+
     this.ctx.suspend();
     this.loadListeners();
   }
@@ -118,10 +121,13 @@ export default class Midi {
 
   loadFromSession(url) {
     this.state = this.loadedStates[url];
+    const { bpm } = this.state;
     console.log(`Loaded ${url} from session`);
     if (this.isPlaying) this.startedAt = this.ctx.currentTime;
     else this.startedAt = 0;
     this.previousTime = false;
+    this.$bpm.value = bpm;
+    this.$bpmValue.innerText = bpm;
     return true;
   }
 
@@ -168,8 +174,9 @@ export default class Midi {
     });
 
     // keep track of state
+    const bpm = Math.round(midi.header.tempos[0].bpm);
     this.state = {
-      bpm: Math.round(midi.header.tempos[0].bpm),
+      bpm,
       ticks: 0,
       offsetTicks: 0,
       durationTicks: midi.durationTicks,
@@ -186,6 +193,9 @@ export default class Midi {
     };
     if (this.isPlaying) this.startedAt = this.ctx.currentTime;
     else this.startedAt = 0;
+
+    this.$bpm.value = bpm;
+    this.$bpmValue.innerText = bpm;
     this.previousTime = false;
     this.isBusy = false;
     this.updateStorage();
@@ -201,6 +211,7 @@ export default class Midi {
     this.$highLowButton.addEventListener('click', (_event) =>
       this.setHighLow(),
     );
+    this.$bpm.addEventListener('input', (_event) => this.onInputBPM());
     window.addEventListener('blur', (_event) => this.onWindowBlur());
     window.addEventListener('focus', (_event) => this.onWindowFocus());
   }
@@ -210,6 +221,11 @@ export default class Midi {
     this.synth.load();
     this.startedAt = this.ctx.currentTime;
     this.step();
+  }
+
+  onInputBPM() {
+    const bpm = parseInt(this.$bpm.value);
+    this.updateBPM(bpm);
   }
 
   onWindowBlur() {
@@ -409,30 +425,6 @@ export default class Midi {
     this.queueRecalculateNotes();
   }
 
-  speed(deltaBpm) {
-    if (!this.isReady()) return;
-    this.isBusy = true;
-    const { bpm, durationTicks } = this.state;
-    const duration = this.ticksToSeconds(durationTicks);
-    const { currentTime } = this.ctx;
-
-    const elapsed = currentTime - this.startedAt;
-    const time = elapsed % duration;
-    const progress = time / duration;
-
-    const newBpm = MathHelper.clamp(bpm + deltaBpm, 40, 240);
-    this.state.bpm = newBpm;
-    console.log(`New BPM: ${newBpm}`);
-
-    const newDuration = this.ticksToSeconds(durationTicks);
-    const newTime = newDuration * progress;
-    this.startedAt = currentTime - newTime;
-    this.previousTime = false;
-
-    this.updateStorage();
-    this.isBusy = false;
-  }
-
   step() {
     window.requestAnimationFrame(() => this.step());
     if (!this.isPlaying || !this.isReady()) return;
@@ -526,6 +518,28 @@ export default class Midi {
     const isPlaying = this.$playButton.classList.contains('playing');
     if (isPlaying) this.play();
     else this.pause();
+  }
+
+  updateBPM(bpm) {
+    if (!this.isReady()) return;
+
+    this.isBusy = true;
+    this.state.bpm = bpm;
+
+    const { currentIndex } = this.state;
+    const { currentTime } = this.ctx;
+    const { secondsUntilPlay } = this.getNoteSchedule(
+      currentIndex,
+      currentTime,
+    );
+
+    this.durationJustChanged = true;
+    this.lastNoteIndex = currentIndex;
+    this.secondsUntilPlayLastNote = secondsUntilPlay;
+    this.$bpmValue.innerText = bpm;
+
+    this.updateStorage();
+    this.isBusy = false;
   }
 
   updateStorage() {
