@@ -1,6 +1,7 @@
 import Midi from './Midi.js';
 import MidiSelector from './MidiSelector.js';
 import MidiUI from './MidiUI.js';
+import PanelManager from './PanelManager.js';
 import PointerManager from './PointerManager.js';
 import StringHelper from './StringHelper.js';
 
@@ -51,6 +52,7 @@ export default class App {
         this.onPointerTriggerNote(pointer);
       },
     });
+    this.panels = new PanelManager();
     this.selector.onSelect();
   }
 
