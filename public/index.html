@@ -109,34 +109,38 @@
           <div class="form-row">
             <fieldset class="radio-fieldset">
               <legend>Oscillator</legend>
-              <label for="oscillator-type-sawtooth"
+              <label for="synth-oscillator-type-amsawtooth"
                 ><input
-                  id="oscillator-type-sawtooth"
+                  id="synth-oscillator-type-amsawtooth"
+                  class="oscillator-type"
                   type="radio"
                   name="osc"
                   value="amsawtooth"
                 />Sawtooth</label
               >
-              <label for="oscillator-type-sine"
+              <label for="synth-oscillator-type-amsine"
                 ><input
-                  id="oscillator-type-sine"
+                  id="synth-oscillator-type-amsine"
+                  class="oscillator-type"
                   type="radio"
                   name="osc"
                   value="amsine"
                 />Sine</label
               >
-              <label for="oscillator-type-square"
+              <label for="synth-oscillator-type-amsquare"
                 ><input
-                  id="oscillator-type-square"
+                  id="synth-oscillator-type-amsquare"
+                  class="oscillator-type"
                   type="radio"
                   name="osc"
                   value="amsquare"
                   checked
                 />Square</label
               >
-              <label for="oscillator-type-triangle"
+              <label for="synth-oscillator-type-amtriangle"
                 ><input
-                  id="oscillator-type-triangle"
+                  id="synth-oscillator-type-amtriangle"
+                  class="oscillator-type"
                   type="radio"
                   name="osc"
                   value="amtriangle"
@@ -148,77 +152,83 @@
             <fieldset id="envelope-fieldset">
               <legend>Amplitude Envelope</legend>
               <div class="input-group">
-                <label for="envelope-attack"> Attack </label>
+                <label for="synth-envelope-attack"> Attack </label>
                 <input
-                  id="envelope-attack"
+                  id="synth-envelope-attack"
                   name="envelope-attack"
                   class="synth-option"
                   type="range"
                   min="0"
                   max="2"
                   step="0.01"
+                  value="0.02"
                 />
-                <span class="value">0.01</span>
+                <span id="synth-envelope-attack-value" class="value">0.02</span>
               </div>
               <div class="input-group">
-                <label for="envelope-decay"> Decay </label>
+                <label for="synth-envelope-decay"> Decay </label>
                 <input
-                  id="envelope-decay"
+                  id="synth-envelope-decay"
                   name="envelope-decay"
                   class="synth-option"
                   type="range"
                   min="0"
                   max="2"
                   step="0.01"
+                  value="0.2"
                 />
-                <span class="value">0.1</span>
+                <span id="synth-envelope-decay-value" class="value">0.2</span>
               </div>
               <div class="input-group">
-                <label for="envelope-sustain"> Sustain </label>
+                <label for="synth-envelope-sustain"> Sustain </label>
                 <input
-                  id="envelope-sustain"
+                  id="synth-envelope-sustain"
                   name="envelope-sustain"
                   class="synth-option"
                   type="range"
                   min="0"
                   max="1"
                   step="0.01"
+                  value="0.25"
                 />
-                <span class="value">1</span>
+                <span id="synth-envelope-sustain-value" class="value"
+                  >0.25</span
+                >
               </div>
               <div class="input-group">
-                <label for="envelope-release"> Release </label>
+                <label for="synth-envelope-release"> Release </label>
                 <input
-                  id="envelope-release"
+                  id="synth-envelope-release"
                   name="envelope-release"
                   class="synth-option"
                   type="range"
                   min="0"
                   max="5"
                   step="0.01"
+                  value="1"
                 />
-                <span class="value">0.5</span>
+                <span id="synth-envelope-release-value" class="value">1</span>
               </div>
             </fieldset>
             <fieldset>
               <div class="input-group">
-                <label for="reverb">Reverb</label>
+                <label for="effects-reverb-wet">Reverb</label>
                 <input
-                  id="reverb-wet"
+                  id="effects-reverb-wet"
                   name="reverb-wet"
                   type="range"
                   class="synth-option"
                   min="0"
                   max="1"
-                  value="0.67"
+                  value="0.667"
                   step="0.01"
                 />
-                <span class="value">0.5</span>
+                <span id="effects-reverb-wet-value" class="value">0.667</span>
               </div>
             </fieldset>
             <fieldset>
               <div class="input-group">
-                <label for="bpm">BPM</label>
+                <label for="bpm-input">BPM</label>
                 <input
                   id="bpm-input"
                   name="bpm"
