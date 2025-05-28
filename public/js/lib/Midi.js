@@ -37,6 +37,7 @@ export default class Midi {
 
     this.$playButton = document.getElementById('toggle-play-button');
     this.$resetButton = document.getElementById('reset-button');
+    this.$randomizeButton = document.getElementById('randomize-button');
     this.$everyOtherButton = document.getElementById('every-other-button');
     this.$highLowButton = document.getElementById('high-low-button');
 
@@ -205,6 +206,9 @@ export default class Midi {
   loadListeners() {
     this.$playButton.addEventListener('click', (_event) => this.togglePlay());
     this.$resetButton.addEventListener('click', (_event) => this.reset());
+    this.$randomizeButton.addEventListener('click', (_event) =>
+      this.randomize(),
+    );
     this.$everyOtherButton.addEventListener('click', (_event) =>
       this.setEveryOther(),
     );
@@ -280,6 +284,23 @@ export default class Midi {
     }
 
     this.recalcThrottler.queue();
+  }
+
+  randomize() {
+    if (!this.isReady()) return;
+    if (!this.state) return;
+
+    const { indexStart, indexEnd } = this.state;
+    for (let i = indexStart; i <= indexEnd; i += 1) {
+      const rand = Math.random();
+      const { id } = this.state.notes[i];
+      const isActive = rand > 0.5;
+      this.state.notes[i].active = isActive;
+      const $el = document.getElementById(id);
+      if ($el && isActive) $el.classList.add('active');
+      else if ($el) $el.classList.remove('active');
+    }
+    this.queueRecalculateNotes();
   }
 
   recalculateOffsets() {
