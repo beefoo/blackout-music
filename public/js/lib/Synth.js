@@ -142,7 +142,9 @@ export default class Synth {
   }
 
   play(note, secondsInTheFuture) {
-    const now = Tone.getContext().now();
+    const ctx = Tone.getContext();
+    if (ctx.state !== 'running') return;
+    const now = ctx.now();
     let future = now + Math.max(secondsInTheFuture, 0);
     const { lastScheduled } = this;
     if (future < lastScheduled) return; // we cannot schedule before the last scheduled note

@@ -35,17 +35,17 @@ export default class MidiUI {
     const $el = document.getElementById(note.id);
     if (!$el) return;
     const { duration } = note;
-    const { children } = $el;
-    const count = children.length;
+    const cells = $el.querySelectorAll('.cell');
+    const count = cells.length;
     if (duration <= 0 || count <= 0) return;
     const step = Math.round((duration / count) * 1000);
     for (let i = 0; i < count; i++) {
-      const $child = $el.children[i];
+      const $cell = cells[i];
       const delay = i * step;
       setTimeout(() => {
-        $child.classList.add('highlight');
+        $cell.classList.add('highlight');
         setTimeout(() => {
-          $child.classList.remove('highlight');
+          $cell.classList.remove('highlight');
         }, 500);
       }, delay);
     }
@@ -147,7 +147,7 @@ export default class MidiUI {
     // build html
     let html = '';
     notes.forEach((note) => {
-      const { active, id, row, ticks, durationTicks } = note;
+      const { active, id, name, row, ticks, durationTicks } = note;
       const endTicks = ticks + durationTicks;
       let cells = Math.max(Math.round(durationTicks / ticksPerCell), 1);
       let n = MathHelper.norm(ticks, tickStart, tickEnd);
@@ -156,12 +156,15 @@ export default class MidiUI {
       if (n < 0) {
         n = 0;
         const deltaTicks = tickStart - ticks;
-        cells -= deltaTicks;
+        const deltaCells = Math.floor(deltaTicks / ticksPerCell);
+        cells -= deltaCells;
       }
 
       // account for notes that end after page
       if (endTicks > tickEnd) {
-        cells -= endTicks - tickEnd;
+        const deltaTicks = endTicks - tickEnd;
+        const deltaCells = Math.floor(deltaTicks / ticksPerCell);
+        cells -= deltaCells;
       }
 
       const cellStart = Math.round(n * (cellsPerPage - 1));
@@ -169,10 +172,11 @@ export default class MidiUI {
       const left = (cellStart / cellsPerPage) * 100;
       const top = row * cellH + topOffset;
       const activeLabel = active ? 'active' : '';
-      html += `<button id="${id}" class="note ${activeLabel}" style="width: ${width}%; height: ${cellH}%; top: ${top}%; left: ${left}%;">`;
+      html += `<button id="${id}" class="note ${activeLabel}" style="width: ${width}%; height: ${cellH}%; top: ${top}%; left: ${left}%;" data-name="${name}">`;
       for (let n = 0; n < cells; n++) {
         html += '<span class="cell"></span>';
       }
+      html += `<span class="visually-hidden">${name} note</span>`;
       html += '</button>';
     });
     $el.innerHTML = html;
