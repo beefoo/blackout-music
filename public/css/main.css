@@ -325,7 +325,7 @@ body.playing .note.active .cell.highlight {
   display: block;
 }
 .panel h2,
-.panel form {
+.panel .form {
   margin: 0 auto;
   width: 100%;
   box-sizing: border-box;

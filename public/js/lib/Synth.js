@@ -16,6 +16,7 @@ export default class Synth {
   init() {
     this.loaded = false;
     this.lastScheduled = -1;
+    this.setDefaults();
     this.loadFromStorage();
     this.loadListeners();
   }
@@ -135,6 +136,10 @@ export default class Synth {
         throttler.queue();
       });
     });
+    const $reset = document.getElementById('reset-settings-button');
+    $reset.addEventListener('click', (_event) => {
+      this.resetSettings();
+    });
   }
 
   pause() {
@@ -157,6 +162,51 @@ export default class Synth {
     // console.log(this.synth.activeVoices);
     this.synth.triggerAttackRelease(name, duration, future, velocity);
     this.lastScheduled = future;
+  }
+
+  resetSettings() {
+    const { defaults } = this;
+
+    document.getElementById(
+      `synth-oscillator-type-${defaults.synth.oscillator.type}`,
+    ).checked = true;
+
+    ['attack', 'decay', 'sustain', 'release'].forEach((prop) => {
+      const value = defaults.synth.envelope[prop];
+      document.getElementById(`synth-envelope-${prop}`).value = value;
+    });
+
+    document.getElementById(`effects-reverb-wet`).value =
+      defaults.effects.reverb.wet;
+
+    this.update();
+  }
+
+  setDefaults() {
+    const defaults = {
+      synth: {
+        oscillator: {
+          type: 'amsquare',
+        },
+        envelope: {},
+      },
+      effects: {
+        reverb: {},
+      },
+    };
+
+    ['attack', 'decay', 'sustain', 'release'].forEach((prop) => {
+      const value = document.getElementById(
+        `synth-envelope-${prop}-value`,
+      ).innerText;
+      defaults.synth.envelope[prop] = parseFloat(value);
+    });
+
+    defaults.effects.reverb.wet = parseFloat(
+      document.getElementById(`effects-reverb-wet-value`).innerText,
+    );
+
+    this.defaults = defaults;
   }
 
   update() {
