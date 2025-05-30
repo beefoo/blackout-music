@@ -59,7 +59,7 @@ export default class Midi {
   getActiveNotes() {
     const { indexStart, indexEnd, notes } = this.state;
     const activeNotes = notes.filter(
-      (note, i) => i >= indexStart && i <= indexEnd && note.active,
+      (note, i) => i >= indexStart && i < indexEnd && note.active,
     );
 
     // sort them
@@ -188,7 +188,7 @@ export default class Midi {
       measureCount,
       currentIndex: 0,
       indexStart: 0,
-      indexEnd: notes.length - 1,
+      indexEnd: notes.length,
       noteCount: notes.length,
       notes,
     };
@@ -200,6 +200,7 @@ export default class Midi {
     this.previousTime = false;
     this.isBusy = false;
     this.updateStorage();
+
     return true;
   }
 
@@ -291,7 +292,7 @@ export default class Midi {
     if (!this.state) return;
 
     const { indexStart, indexEnd } = this.state;
-    for (let i = indexStart; i <= indexEnd; i += 1) {
+    for (let i = indexStart; i < indexEnd; i += 1) {
       const rand = Math.random();
       const { id } = this.state.notes[i];
       const isActive = rand > 0.5;
@@ -351,7 +352,7 @@ export default class Midi {
     if (!this.state) return;
 
     const { indexStart, indexEnd } = this.state;
-    for (let i = indexStart; i <= indexEnd; i += 1) {
+    for (let i = indexStart; i < indexEnd; i += 1) {
       const { active, id } = this.state.notes[i];
       if (!active) {
         this.state.notes[i].active = true;
@@ -390,7 +391,7 @@ export default class Midi {
     });
 
     let indexEnd = notes.findIndex((note) => note.ticks >= tickEnd);
-    if (indexEnd < 0) indexEnd = notes.length - 1;
+    if (indexEnd < 0) indexEnd = notes.length;
 
     this.state.indexStart = indexStart;
     this.state.indexEnd = indexEnd;
@@ -412,7 +413,7 @@ export default class Midi {
     const { indexStart, indexEnd } = this.state;
     const first = this.state.notes[indexStart];
     let isActive = !first.active;
-    for (let i = indexStart; i <= indexEnd; i += 1) {
+    for (let i = indexStart; i < indexEnd; i += 1) {
       const { id } = this.state.notes[i];
       this.state.notes[i].active = isActive;
       const $el = document.getElementById(id);
@@ -429,7 +430,7 @@ export default class Midi {
 
     const { indexStart, indexEnd } = this.state;
     const notes = this.state.notes.filter(
-      (_note, i) => i >= indexStart && i <= indexEnd,
+      (_note, i) => i >= indexStart && i < indexEnd,
     );
     notes.sort((a, b) => b.midi - a.midi);
     const first = notes[0];
@@ -503,6 +504,7 @@ export default class Midi {
       // if it's within the latency, queue it
       if (secondsUntilPlay >= 0 && secondsUntilPlay <= latency) {
         index += 1;
+        // console.log(index, note.durationTicks, noteDur);
         queue.push({
           note: Object.assign({}, note, {
             duration: noteDur,
@@ -563,27 +565,6 @@ export default class Midi {
     this.isBusy = false;
   }
 
-  updateStorage() {
-    if (!this.isReady()) return;
-
-    if (!this.storageThrottler) {
-      const throttled = () => {
-        const state = structuredClone(this.state);
-        this.loadedStates[this.url] = state;
-        StringHelper.saveStorageData(
-          this.options.localStorageKey,
-          this.loadedStates,
-        );
-      };
-      this.storageThrottler = new Throttler({
-        throttled,
-        seconds: 1.0,
-      });
-    }
-
-    this.storageThrottler.queue();
-  }
-
   // determine the offset of the current page from de-activated notes
   updateOffset() {
     // return flattened active notes on this page
@@ -605,7 +586,8 @@ export default class Midi {
 
       // chop off silence at the end
     } else if (lastNoteEndTicks < endTicks - 1) {
-      durationOffsetTicks -= endTicks - lastNoteEndTicks;
+      const delta = endTicks - lastNoteEndTicks;
+      durationOffsetTicks += delta;
     }
 
     // chop off beginning silence
@@ -617,6 +599,27 @@ export default class Midi {
 
     this.state.offsetTicks = offsetTicks;
     this.state.durationOffsetTicks = durationOffsetTicks;
+  }
+
+  updateStorage() {
+    if (!this.isReady()) return;
+
+    if (!this.storageThrottler) {
+      const throttled = () => {
+        const state = structuredClone(this.state);
+        this.loadedStates[this.url] = state;
+        StringHelper.saveStorageData(
+          this.options.localStorageKey,
+          this.loadedStates,
+        );
+      };
+      this.storageThrottler = new Throttler({
+        throttled,
+        seconds: 1.0,
+      });
+    }
+
+    this.storageThrottler.queue();
   }
 
   wasLoopReset(previousTime, currentTime) {

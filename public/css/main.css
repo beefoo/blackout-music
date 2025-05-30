@@ -220,9 +220,14 @@ li {
   display: flex;
   align-items: stretch;
   box-sizing: border-box;
+  z-index: 1;
+}
+.note:hover {
+  border-color: var(--base-darkest);
 }
 .note.active {
   background: var(--secondary-light);
+  z-index: 100;
 }
 .note.active:hover {
   background-color: var(--secondary-lighter);
