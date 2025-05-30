@@ -43,6 +43,9 @@ export default class Midi {
 
     this.$bpm = document.getElementById('bpm-input');
     this.$bpmValue = document.getElementById('bpm-value');
+    this.$resetSettingsButton = document.getElementById(
+      'reset-settings-button',
+    );
 
     this.ctx.suspend();
     this.loadListeners();
@@ -124,6 +127,7 @@ export default class Midi {
     this.state = this.loadedStates[url];
     const { bpm } = this.state;
     console.log(`Loaded ${url} from session`);
+    console.log(this.state);
     if (this.isPlaying) this.startedAt = this.ctx.currentTime;
     else this.startedAt = 0;
     this.previousTime = false;
@@ -177,6 +181,7 @@ export default class Midi {
     // keep track of state
     const bpm = Math.round(midi.header.tempos[0].bpm);
     this.state = {
+      originalBpm: bpm,
       bpm,
       ticks: 0,
       offsetTicks: 0,
@@ -217,6 +222,9 @@ export default class Midi {
       this.setHighLow(),
     );
     this.$bpm.addEventListener('input', (_event) => this.onInputBPM());
+    this.$resetSettingsButton.addEventListener('click', (_event) =>
+      this.resetSettings(),
+    );
     window.addEventListener('blur', (_event) => this.onWindowBlur());
     window.addEventListener('focus', (_event) => this.onWindowFocus());
   }
@@ -361,6 +369,16 @@ export default class Midi {
       }
     }
     this.queueRecalculateNotes();
+  }
+
+  resetSettings() {
+    if (!this.isReady()) return;
+    if (!this.state) return;
+
+    const { originalBpm } = this.state;
+    this.$bpm.value = originalBpm;
+
+    this.updateBPM(originalBpm);
   }
 
   scheduleNote(note, secondsInTheFuture) {
@@ -561,8 +579,8 @@ export default class Midi {
     this.secondsUntilPlayLastNote = secondsUntilPlay;
     this.$bpmValue.innerText = bpm;
 
-    this.updateStorage();
     this.isBusy = false;
+    this.updateStorage();
   }
 
   // determine the offset of the current page from de-activated notes

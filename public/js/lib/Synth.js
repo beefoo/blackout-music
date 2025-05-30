@@ -63,7 +63,7 @@ export default class Synth {
     // add distortion
     // effects.distortion = new Tone.Distortion({ distortion: 0.5, wet: 0.5 });
     // add reverb
-    effects.reverb = new Tone.Reverb(props.reverb);
+    effects.reverb = new Tone.Reverb(props.effects.reverb);
     // attenuate high notes
     effects.lowpass = new Tone.Filter({ frequency: 'C6', type: 'lowpass' });
     // boost low notes
