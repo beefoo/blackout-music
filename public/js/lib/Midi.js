@@ -51,6 +51,17 @@ export default class Midi {
     this.loadListeners();
   }
 
+  activateEl($el, isActive = true) {
+    if (!$el) return;
+    if (isActive) {
+      $el.classList.add('active');
+      $el.removeAttribute('disabled');
+    } else {
+      $el.classList.remove('active');
+      $el.setAttribute('disabled', 'disabled');
+    }
+  }
+
   activateNote(noteIndex, isActive = true) {
     if (!this.isReady()) return;
     this.state.notes[noteIndex].active = isActive;
@@ -306,8 +317,8 @@ export default class Midi {
       const isActive = rand > 0.5;
       this.state.notes[i].active = isActive;
       const $el = document.getElementById(id);
-      if ($el && isActive) $el.classList.add('active');
-      else if ($el) $el.classList.remove('active');
+      if ($el && isActive) this.activateEl($el);
+      else if ($el) this.activateEl($el, false);
     }
     this.queueRecalculateNotes();
   }
@@ -365,7 +376,7 @@ export default class Midi {
       if (!active) {
         this.state.notes[i].active = true;
         const $el = document.getElementById(id);
-        if ($el) $el.classList.add('active');
+        this.activateEl($el);
       }
     }
     this.queueRecalculateNotes();
@@ -435,8 +446,8 @@ export default class Midi {
       const { id } = this.state.notes[i];
       this.state.notes[i].active = isActive;
       const $el = document.getElementById(id);
-      if ($el && isActive) $el.classList.add('active');
-      else if ($el) $el.classList.remove('active');
+      if (isActive) this.activateEl($el);
+      else this.activateEl($el, false);
       isActive = !isActive;
     }
     this.queueRecalculateNotes();
@@ -459,8 +470,8 @@ export default class Midi {
       const isActive = i < middleIndex ? firstIsActive : !firstIsActive;
       this.state.notes[index].active = isActive;
       const $el = document.getElementById(id);
-      if ($el && isActive) $el.classList.add('active');
-      else if ($el) $el.classList.remove('active');
+      if (isActive) this.activateEl($el);
+      else this.activateEl($el, false);
     });
     this.queueRecalculateNotes();
   }

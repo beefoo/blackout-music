@@ -172,7 +172,8 @@ export default class MidiUI {
       const left = (cellStart / cellsPerPage) * 100;
       const top = row * cellH + topOffset;
       const activeLabel = active ? 'active' : '';
-      html += `<button id="${id}" class="note ${activeLabel}" style="width: ${width}%; height: ${cellH}%; top: ${top}%; left: ${left}%;" data-name="${name}">`;
+      const disabledLabel = active ? '' : 'disabled';
+      html += `<button id="${id}" class="note ${activeLabel}" ${disabledLabel} style="width: ${width}%; height: ${cellH}%; top: ${top}%; left: ${left}%;" data-name="${name}">`;
       for (let n = 0; n < cells; n++) {
         html += '<span class="cell"></span>';
       }
