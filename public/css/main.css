@@ -56,6 +56,20 @@
   }
 }
 
+@keyframes button-highlight {
+  from {
+    background-color: var(--primary-light);
+  }
+
+  50% {
+    background-color: var(--secondary-light);
+  }
+
+  to {
+    background-color: var(--primary-light);
+  }
+}
+
 html {
   font: 30px monospace;
   font-family: 'VT323-Regular', monospace;
@@ -340,6 +354,12 @@ body.playing .note.active .cell.highlight {
   width: 40px;
   height: 40px;
   display: block;
+}
+#toggle-play-button {
+  animation: button-highlight 3s ease-in-out infinite;
+}
+#toggle-play-button.playing {
+  animation: none;
 }
 #toggle-play-button svg {
   width: 60px;
