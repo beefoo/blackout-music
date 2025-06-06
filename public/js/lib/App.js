@@ -54,6 +54,13 @@ export default class App {
     });
     this.panels = new PanelManager();
     this.selector.onSelect();
+    this.loadListeners();
+  }
+
+  loadListeners() {
+    document
+      .getElementById('share-button')
+      .addEventListener('click', (_event) => this.updateShareURL());
   }
 
   onChangePage() {
@@ -118,6 +125,16 @@ export default class App {
     if (!loaded) return;
     this.ui.load(this.midi);
     this.updateURL();
+  }
+
+  updateShareURL() {
+    const $input = document.getElementById('share-url');
+    const params = {};
+    params.c = this.selector.id;
+    params.page = this.ui.page + 1;
+    const midiParams = this.midi.getURLParams();
+    const url = StringHelper.dataToURL(Object.assign(params, midiParams));
+    $input.value = url;
   }
 
   updateURL() {

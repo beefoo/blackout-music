@@ -117,6 +117,26 @@ export default class Midi {
     return { secondsUntilPlay, noteDur };
   }
 
+  getPatternString() {
+    let pattern = '';
+    const { indexStart, indexEnd } = this.state;
+    const notes = this.state.notes.filter(
+      (_note, i) => i >= indexStart && i < indexEnd,
+    );
+    notes.forEach((note) => {
+      if (note.active) pattern += '-';
+      else pattern += 'x';
+    });
+    return pattern;
+  }
+
+  getURLParams() {
+    const midiParams = { bpm: this.state.bpm };
+    midiParams.pattern = this.getPatternString();
+    const synthParams = this.synth.getURLParams();
+    return Object.assign(midiParams, synthParams);
+  }
+
   isReady() {
     return this.state !== false && !this.isBusy;
   }

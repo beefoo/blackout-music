@@ -1,6 +1,13 @@
 import MathHelper from './MathHelper.js';
 
 export default class StringHelper {
+  static dataToURL(data) {
+    const baseUrl = window.location.href.split('?')[0];
+    const searchParams = new URLSearchParams(data);
+    const urlEncoded = searchParams.toString();
+    return `${baseUrl}?${urlEncoded}`;
+  }
+
   static loadStorageData(key, defaultValue = false) {
     const item = localStorage.getItem(key);
     if (item) return JSON.parse(item);

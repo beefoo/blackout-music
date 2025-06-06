@@ -56,6 +56,17 @@ export default class Synth {
     return props;
   }
 
+  getURLParams() {
+    const props = this.getInputProperties();
+    const params = {};
+    params.oscillator = props.synth.oscillator.type;
+    params.reverb = props.effects.reverb.wet;
+    ['attack', 'decay', 'sustain', 'release'].forEach((prop) => {
+      params[prop] = props.synth.envelope[prop];
+    });
+    return params;
+  }
+
   load() {
     if (this.loaded) return;
     const props = this.getInputProperties();

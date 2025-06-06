@@ -465,7 +465,7 @@ input[type='range'] {
   font-size: 0.8rem;
   color: var(--base-light);
 }
-.form input[type="text"] {
+.form input[type='text'] {
   width: 100%;
   max-width: 600px;
   margin-bottom: 0.5rem;
