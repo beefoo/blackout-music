@@ -17,21 +17,21 @@ export default class App {
   init() {
     const { options } = this;
     this.selector = new MidiSelector(
-      Object.assign(options, {
+      Object.assign({}, options, {
         onSelectMidi: (url) => {
           this.onSelectMidi(url);
         },
       }),
     );
     this.midi = new Midi(
-      Object.assign(options, {
+      Object.assign({}, options, {
         onPlayNote: (note) => {
           this.onPlayNote(note);
         },
       }),
     );
     this.ui = new MidiUI(
-      Object.assign(options, {
+      Object.assign({}, options, {
         onChangePage: () => {
           this.onChangePage();
         },
@@ -133,7 +133,7 @@ export default class App {
     params.c = this.selector.id;
     params.page = this.ui.page + 1;
     const midiParams = this.midi.getURLParams();
-    const url = StringHelper.dataToURL(Object.assign(params, midiParams));
+    const url = StringHelper.dataToURL(Object.assign({}, params, midiParams));
     $input.value = url;
   }
 

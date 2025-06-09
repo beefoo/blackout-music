@@ -33,8 +33,11 @@ export default class Midi {
     this.previousTime = false;
     this.wasPlayingBeforeBlur = false;
     this.ctx = this.options.audioContext || new AudioContext();
-    this.synth = new Synth();
-
+    this.synth = new Synth(
+      Object.assign({}, this.options, {
+        localStorageKey: 'synth',
+      }),
+    );
     this.$playButton = document.getElementById('toggle-play-button');
     this.$resetButton = document.getElementById('reset-button');
     this.$randomizeButton = document.getElementById('randomize-button');
@@ -46,7 +49,6 @@ export default class Midi {
     this.$resetSettingsButton = document.getElementById(
       'reset-settings-button',
     );
-
     this.ctx.suspend();
     this.loadListeners();
   }
@@ -156,6 +158,7 @@ export default class Midi {
 
   loadFromSession(url) {
     this.state = this.loadedStates[url];
+    this.updateStateFromURLParams('bpm');
     const { bpm } = this.state;
     console.log(`Loaded ${url} from session`);
     console.log(this.state);
@@ -228,11 +231,12 @@ export default class Midi {
       noteCount: notes.length,
       notes,
     };
+    this.updateStateFromURLParams('bpm');
     if (this.isPlaying) this.startedAt = this.ctx.currentTime;
     else this.startedAt = 0;
 
-    this.$bpm.value = bpm;
-    this.$bpmValue.innerText = bpm;
+    this.$bpm.value = this.state.bpm;
+    this.$bpmValue.innerText = this.state.bpm;
     this.previousTime = false;
     this.isBusy = false;
     this.updateStorage();
@@ -452,6 +456,7 @@ export default class Midi {
     this.previousTime = false;
     if (this.isPlaying) this.ctx.resume();
     this.isBusy = false;
+    this.updateStateFromURLParams('pattern');
     this.boundsJustSet = true;
   }
 
@@ -650,8 +655,30 @@ export default class Midi {
     this.state.durationOffsetTicks = durationOffsetTicks;
   }
 
+  updateStateFromURLParams(...keys) {
+    const { options } = this;
+    if (keys.includes('bpm') && 'bpm' in options) {
+      this.state.bpm = options.bpm;
+      delete this.options.bpm;
+    }
+    if (keys.includes('pattern') && 'pattern' in options) {
+      const { indexStart } = this.state;
+      options.pattern.split('').forEach((char, i) => {
+        const index = indexStart + i;
+        const { id } = this.state.notes[index];
+        const isActive = char === '-';
+        this.state.notes[index].active = isActive;
+        const $el = document.getElementById(id);
+        if (isActive) this.activateEl($el);
+        else this.activateEl($el, false);
+      });
+      delete this.options.pattern;
+      this.queueRecalculateNotes();
+    }
+  }
+
   updateStorage() {
-    if (!this.isReady()) return;
+    if (!this.state) return;
 
     if (!this.storageThrottler) {
       const throttled = () => {

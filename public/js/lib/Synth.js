@@ -56,6 +56,20 @@ export default class Synth {
     return props;
   }
 
+  getPropsFromURLParams() {
+    if (!('oscillator' in this.options)) return false;
+    const { options } = this;
+    const props = structuredClone(this.defaults);
+
+    if ('oscillator' in options)
+      props.synth.oscillator.type = options.oscillator;
+    if ('reverb' in options) props.effects.reverb.wet = options.reverb;
+    ['attack', 'decay', 'sustain', 'release'].forEach((prop) => {
+      if (prop in options) props.synth.envelope[prop] = options[prop];
+    });
+    return props;
+  }
+
   getURLParams() {
     const props = this.getInputProperties();
     const params = {};
@@ -104,10 +118,12 @@ export default class Synth {
   }
 
   loadFromStorage() {
-    const props = StringHelper.loadStorageData(
-      this.options.localStorageKey,
-      false,
-    );
+    let props = false;
+    const urlProps = this.getPropsFromURLParams();
+    if (urlProps) props = urlProps;
+    else {
+      props = StringHelper.loadStorageData(this.options.localStorageKey, false);
+    }
 
     if (!props) return;
 
@@ -233,14 +249,14 @@ export default class Synth {
     const reverb = props.effects.reverb.wet;
     document.getElementById(`effects-reverb-wet-value`).innerText = reverb;
 
+    this.updateStorage();
+
     if (!this.loaded) return;
 
     // update synth
     this.synth.set(props.synth);
     // update reverb
     this.effects.reverb.set(props.effects.reverb);
-
-    this.updateStorage();
   }
 
   updateStorage() {
