@@ -9,13 +9,13 @@ export default class Throttler {
   }
 
   init() {
-    this.waitMs = Math.round(this.options.seconds);
+    this.waitMs = Math.round(this.options.seconds) * 1000;
     this.timeout = false;
     this.queued = false;
   }
 
   queue() {
-    const { waitMs, timeout, queued } = this;
+    const { waitMs, timeout } = this;
 
     if (timeout === false) {
       this.options.throttled();
@@ -23,7 +23,7 @@ export default class Throttler {
       // wait some time before next function call
       this.timeout = setTimeout(() => {
         this.timeout = false;
-        if (queued) {
+        if (this.queued) {
           this.queued = false;
           this.queue();
         }
