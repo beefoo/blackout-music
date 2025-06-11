@@ -135,6 +135,17 @@
               <input id="share-url" name="share" type="text" />
             </fieldset>
           </div>
+          <div class="form-row">
+            <fieldset>
+              <legend>Download as MIDI</legend>
+              <button id="download-midi-pattern">
+                Download current pattern as MIDI file
+              </button>
+              <button id="download-midi-song">
+                Download entire song as MIDI file
+              </button>
+            </fieldset>
+          </div>
         </div>
       </div>
       <div id="settings-panel" class="panel">
@@ -287,6 +298,14 @@
         </div>
       </div>
     </div>
+
+    <a
+      id="download-midi-link"
+      class="visually-hidden"
+      tabindex="-1"
+      download="blackout-music.mid"
+      >Hidden download midi link</a
+    >
 
     <script src="js/main.js" type="module"></script>
   </body>

@@ -470,6 +470,9 @@ input[type='range'] {
   max-width: 600px;
   margin-bottom: 0.5rem;
 }
+.form button {
+  margin-bottom: 0.5rem;
+}
 
 .visually-hidden {
   clip: rect(0 0 0 0);

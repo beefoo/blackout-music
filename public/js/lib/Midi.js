@@ -43,6 +43,8 @@ export default class Midi {
     this.$randomizeButton = document.getElementById('randomize-button');
     this.$everyOtherButton = document.getElementById('every-other-button');
     this.$highLowButton = document.getElementById('high-low-button');
+    this.$downloadPattern = document.getElementById('download-midi-pattern');
+    this.$downloadSong = document.getElementById('download-midi-song');
 
     this.$bpm = document.getElementById('bpm-input');
     this.$bpmValue = document.getElementById('bpm-value');
@@ -69,6 +71,52 @@ export default class Midi {
     this.state.notes[noteIndex].active = isActive;
 
     this.queueRecalculateNotes();
+  }
+
+  download(indexStart = 0, indexEnd = -1) {
+    if (!this.state) return;
+
+    const { notes } = this.state;
+    const activeNotes = notes.filter(
+      (note, i) =>
+        i >= indexStart && (i < indexEnd || indexEnd < 0) && note.active,
+    );
+    const tracks = MathHelper.unique(activeNotes.map((note) => note.track));
+    const midi = new ToneMidi();
+
+    tracks.forEach((trackIndex) => {
+      // add a track
+      const track = midi.addTrack();
+      const trackNotes = activeNotes.filter(
+        (note) => note.track === trackIndex,
+      );
+      trackNotes.forEach((note) => {
+        const duration = this.ticksToSeconds(note.durationTicks);
+        const time = this.ticksToSeconds(note.ticks - note.offsetTicks);
+        track.addNote({
+          midi: note.midi,
+          time,
+          duration,
+        });
+      });
+    });
+    // convert to data and download
+    const midiBuff = midi.toArray();
+    const midiBlob = new Blob([midiBuff], {
+      type: 'audio/mid',
+    });
+    const midiURL = window.URL.createObjectURL(midiBlob);
+    const $link = document.getElementById('download-midi-link');
+    $link.href = midiURL;
+    $link.click();
+    window.URL.revokeObjectURL(midiURL);
+  }
+
+  downloadPattern() {
+    if (!this.state) return;
+
+    const { indexStart, indexEnd } = this.state;
+    this.download(indexStart, indexEnd);
   }
 
   // return flattened array of active notes on this page
@@ -260,6 +308,10 @@ export default class Midi {
     this.$resetSettingsButton.addEventListener('click', (_event) =>
       this.resetSettings(),
     );
+    this.$downloadPattern.addEventListener('click', (_event) =>
+      this.downloadPattern(),
+    );
+    this.$downloadSong.addEventListener('click', (_event) => this.download());
     window.addEventListener('blur', (_event) => this.onWindowBlur());
     window.addEventListener('focus', (_event) => this.onWindowFocus());
   }
