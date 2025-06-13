@@ -72,6 +72,15 @@ const config = {
       url: 'https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=23',
       active: true,
     },
+    {
+      id: 'upload',
+      title: 'Your own MIDI file',
+      alt: '',
+      creator: '',
+      date: '',
+      url: 'upload',
+      active: true,
+    },
   ],
 };
 

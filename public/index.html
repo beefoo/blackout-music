@@ -39,6 +39,11 @@
           <!-- prettier-ignore -->
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M22 4v2h-1v2h-1v1h-5V8h-2v1h-1v1h-1v4h1v1h1v1h2v-1h5v1h1v2h1v2h-1v2h-1v1h-5v-1h-1v-2h-1v-2h-1v-1h-1v-1h-1v-1H9v1H4v-1H3v-2H2v-2h1V9h1V8h5v1h1V8h1V7h1V6h1V4h1V2h1V1h5v1h1v2z"/></svg>
         </button>
+        <button id="upload-button" title="Upload MIDI file">
+          <span class="visually-hidden">Upload MIDI file</span>
+          <!-- prettier-ignore -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5V3h2v2h2v2h2v2h-2V7h-2v10h-2V7H9v2H7V7h2V5zM3 15v6h18v-6h-2v4H5v-4z"/></svg>
+        </button>
         <a
           href="/about.html"
           class="button"
@@ -306,6 +311,14 @@
       download="blackout-music.mid"
       >Hidden download midi link</a
     >
+
+    <input
+      id="midi-file-input"
+      type="file"
+      class="visually-hidden"
+      tabindex="-1"
+      accept=".mid"
+    />
 
     <script src="js/main.js" type="module"></script>
   </body>

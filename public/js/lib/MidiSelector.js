@@ -32,15 +32,18 @@ export default class MidiSelector {
     this.scores.forEach((score) => {
       const title = score.alt !== '' ? score.alt : score.title;
       const selectedString = selected === score.id ? ' selected' : '';
-      html += `<option value="${score.id}"${selectedString}>${title}, ${score.creator}</option>`;
+      if (score.creator !== '')
+        html += `<option value="${score.id}"${selectedString}>${title}</option>`;
+      else
+        html += `<option value="${score.id}"${selectedString}>${title}, ${score.creator}</option>`;
     });
     this.$el.innerHTML = html;
   }
 
   onSelect() {
     const id = this.$el.value;
-    const url = `${this.options.midiPath}${id}.mid`;
     this.id = id;
+    const url = `${this.options.midiPath}${id}.mid`;
     this.options.onSelectMidi(url);
   }
 }
