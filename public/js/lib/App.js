@@ -1,6 +1,7 @@
 import Midi from './Midi.js';
 import MidiSelector from './MidiSelector.js';
 import MidiUI from './MidiUI.js';
+import MidiUploader from './MidiUploader.js';
 import PanelManager from './PanelManager.js';
 import PointerManager from './PointerManager.js';
 import StringHelper from './StringHelper.js';
@@ -20,6 +21,13 @@ export default class App {
       Object.assign({}, options, {
         onSelectMidi: (url) => {
           this.onSelectMidi(url);
+        },
+      }),
+    );
+    this.uploader = new MidiUploader(
+      Object.assign({}, options, {
+        onSelectFile: (file) => {
+          this.onSelectMidiFile(file);
         },
       }),
     );
@@ -122,7 +130,18 @@ export default class App {
 
   async onSelectMidi(url) {
     const loaded = await this.midi.loadFromURL(url);
+    if (!loaded && url.includes('upload')) {
+      this.uploader.triggerSelect();
+      return;
+    } else if (!loaded) return;
+    this.ui.load(this.midi);
+    this.updateURL();
+  }
+
+  async onSelectMidiFile(file) {
+    const loaded = await this.midi.loadFromFile(file);
     if (!loaded) return;
+    this.selector.setId('upload');
     this.ui.load(this.midi);
     this.updateURL();
   }

@@ -187,42 +187,7 @@ export default class Midi {
     return Object.assign(midiParams, synthParams);
   }
 
-  isReady() {
-    return this.state !== false && !this.isBusy;
-  }
-
-  jumpToNote(currentTime, noteIndex, secondsUntilPlay) {
-    if (this.startedAt === false) return;
-    const padding = Math.max(secondsUntilPlay, 0.01);
-    const { ticks, offsetTicks } = this.state;
-    const note = this.state.notes[noteIndex];
-
-    const loopStart = this.ticksToSeconds(ticks - offsetTicks);
-    const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
-    const noteLoopTime = Math.max(noteTime - loopStart - padding, 0);
-    this.startedAt = currentTime - noteLoopTime;
-    this.previousTime = false;
-  }
-
-  loadFromSession(url) {
-    this.state = this.loadedStates[url];
-    this.updateStateFromURLParams('bpm');
-    const { bpm } = this.state;
-    console.log(`Loaded ${url} from session`);
-    console.log(this.state);
-    if (this.isPlaying) this.startedAt = this.ctx.currentTime;
-    else this.startedAt = 0;
-    this.previousTime = false;
-    this.$bpm.value = bpm;
-    this.$bpmValue.innerText = bpm;
-    return true;
-  }
-
-  async loadFromURL(url) {
-    this.url = url;
-    if (url in this.loadedStates) return this.loadFromSession(url);
-    this.isBusy = true;
-    const midi = await ToneMidi.fromUrl(url);
+  initializeMidi(midi) {
     console.log(midi);
     const ticksPerQNote = midi.header.ppq;
     const ticksPerMeasure = ticksPerQNote * 4;
@@ -261,7 +226,9 @@ export default class Midi {
     });
 
     // keep track of state
-    const bpm = Math.round(midi.header.tempos[0].bpm);
+    const bpm = midi.header.tempos.length
+      ? Math.round(midi.header.tempos[0].bpm)
+      : 120;
     this.state = {
       originalBpm: bpm,
       bpm,
@@ -288,6 +255,63 @@ export default class Midi {
     this.previousTime = false;
     this.isBusy = false;
     this.updateStorage();
+  }
+
+  isReady() {
+    return this.state !== false && !this.isBusy;
+  }
+
+  jumpToNote(currentTime, noteIndex, secondsUntilPlay) {
+    if (this.startedAt === false) return;
+    const padding = Math.max(secondsUntilPlay, 0.01);
+    const { ticks, offsetTicks } = this.state;
+    const note = this.state.notes[noteIndex];
+
+    const loopStart = this.ticksToSeconds(ticks - offsetTicks);
+    const noteTime = this.ticksToSeconds(note.ticks - note.offsetTicks);
+    const noteLoopTime = Math.max(noteTime - loopStart - padding, 0);
+    this.startedAt = currentTime - noteLoopTime;
+    this.previousTime = false;
+  }
+
+  async loadFromFile(file) {
+    this.url = 'upload';
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        const data = reader.result;
+        const midi = new ToneMidi(data);
+        this.initializeMidi(midi);
+        resolve(true);
+      });
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  loadFromSession(url) {
+    this.state = this.loadedStates[url];
+    this.updateStateFromURLParams('bpm');
+    const { bpm } = this.state;
+    console.log(`Loaded ${url} from session`);
+    console.log(this.state);
+    if (this.isPlaying) this.startedAt = this.ctx.currentTime;
+    else this.startedAt = 0;
+    this.previousTime = false;
+    this.$bpm.value = bpm;
+    this.$bpmValue.innerText = bpm;
+    return true;
+  }
+
+  async loadFromURL(url) {
+    const isUpload = url.includes('upload');
+    const key = isUpload ? 'upload' : url;
+    this.url = key;
+    if (key in this.loadedStates) return this.loadFromSession(key);
+    if (key === 'upload') return false;
+    this.isBusy = true;
+    const midi = await ToneMidi.fromUrl(url);
+
+    this.initializeMidi(midi);
 
     return true;
   }

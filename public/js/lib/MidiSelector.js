@@ -32,7 +32,7 @@ export default class MidiSelector {
     this.scores.forEach((score) => {
       const title = score.alt !== '' ? score.alt : score.title;
       const selectedString = selected === score.id ? ' selected' : '';
-      if (score.creator !== '')
+      if (score.creator === '')
         html += `<option value="${score.id}"${selectedString}>${title}</option>`;
       else
         html += `<option value="${score.id}"${selectedString}>${title}, ${score.creator}</option>`;
@@ -45,5 +45,10 @@ export default class MidiSelector {
     this.id = id;
     const url = `${this.options.midiPath}${id}.mid`;
     this.options.onSelectMidi(url);
+  }
+
+  setId(id) {
+    this.id = id;
+    this.$el.value = id;
   }
 }
