@@ -177,7 +177,7 @@ export default class MidiUI {
       for (let n = 0; n < cells; n++) {
         html += '<span class="cell"></span>';
       }
-      html += `<span class="visually-hidden">${name} note</span>`;
+      html += `<span class="note-label">${name} note</span>`;
       html += '</button>';
     });
     $el.innerHTML = html;
