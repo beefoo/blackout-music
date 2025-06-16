@@ -19,8 +19,8 @@ export default class App {
     const { options } = this;
     this.selector = new MidiSelector(
       Object.assign({}, options, {
-        onSelectMidi: (url) => {
-          this.onSelectMidi(url);
+        onSelectMidi: (url, fromUser) => {
+          this.onSelectMidi(url, fromUser);
         },
       }),
     );
@@ -61,14 +61,15 @@ export default class App {
       },
     });
     this.panels = new PanelManager();
-    this.selector.onSelect();
+    this.selector.onSelect(false);
     this.loadListeners();
   }
 
   loadListeners() {
-    document
-      .getElementById('share-button')
-      .addEventListener('click', (_event) => this.updateShareURL());
+    this.$shareButton = document.getElementById('share-button');
+    this.$shareButton.addEventListener('click', (_event) =>
+      this.updateShareURL(),
+    );
   }
 
   onChangePage() {
@@ -128,10 +129,15 @@ export default class App {
     });
   }
 
-  async onSelectMidi(url) {
+  async onSelectMidi(url, fromUser) {
+    const isUpload = url.includes('upload');
     const loaded = await this.midi.loadFromURL(url);
-    if (!loaded && url.includes('upload')) {
-      this.uploader.triggerSelect();
+    if (!loaded && isUpload) {
+      if (fromUser) this.uploader.triggerSelect();
+      else {
+        this.midi.firstLoad = false;
+        this.selector.reset();
+      }
       return;
     } else if (!loaded) return;
     this.ui.load(this.midi);

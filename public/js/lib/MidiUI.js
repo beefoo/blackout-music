@@ -19,6 +19,7 @@ export default class MidiUI {
     this.$pageLeft = document.getElementById('page-left');
     this.$pageRight = document.getElementById('page-right');
     this.$select = document.getElementById('select-page');
+    this.$shareButton = document.getElementById('share-button');
     this.page = this.options.page - 1;
     this.firstLoad = true;
     this.loadListeners();
@@ -67,6 +68,8 @@ export default class MidiUI {
     this.loadPage(this.page);
     this.renderPagination();
     if (firstLoad) this.$select.value = this.page;
+    if (midi.state.isUpload) this.$shareButton.classList.add('hide');
+    else this.$shareButton.classList.remove('hide');
   }
 
   loadListeners() {

@@ -126,6 +126,10 @@ button:disabled {
   border-color: var(--base-dark);
   cursor: default;
 }
+button.hide,
+a.button.hide {
+  display: none;
+}
 
 p,
 li {
@@ -496,6 +500,7 @@ input[type='range'] {
   margin-bottom: 0.5rem;
 }
 .form button {
+  margin-top: 0.5rem;
   margin-bottom: 0.5rem;
 }
 

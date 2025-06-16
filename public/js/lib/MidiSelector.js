@@ -4,7 +4,7 @@ export default class MidiSelector {
       c: '',
       debug: false,
       midiPath: 'mid/',
-      onSelectMidi: (url) => {},
+      onSelectMidi: (url, fromUser) => {},
       scores: [],
     };
     this.options = Object.assign(defaults, options);
@@ -40,11 +40,18 @@ export default class MidiSelector {
     this.$el.innerHTML = html;
   }
 
-  onSelect() {
+  onSelect(fromUser = true) {
     const id = this.$el.value;
     this.id = id;
     const url = `${this.options.midiPath}${id}.mid`;
-    this.options.onSelectMidi(url);
+    this.options.onSelectMidi(url, fromUser);
+  }
+
+  reset() {
+    const first = this.scores[0];
+    const { id } = first;
+    this.setId(id);
+    this.onSelect(false);
   }
 
   setId(id) {

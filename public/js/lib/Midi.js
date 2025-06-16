@@ -187,7 +187,7 @@ export default class Midi {
     return Object.assign(midiParams, synthParams);
   }
 
-  initializeMidi(midi) {
+  initializeMidi(midi, isUpload = false) {
     console.log(midi);
     const ticksPerQNote = midi.header.ppq;
     const ticksPerMeasure = ticksPerQNote * 4;
@@ -245,6 +245,7 @@ export default class Midi {
       indexEnd: notes.length,
       noteCount: notes.length,
       notes,
+      isUpload,
     };
     this.updateStateFromURLParams('bpm');
     if (this.isPlaying) this.startedAt = this.ctx.currentTime;
@@ -281,7 +282,7 @@ export default class Midi {
       reader.addEventListener('load', () => {
         const data = reader.result;
         const midi = new ToneMidi(data);
-        this.initializeMidi(midi);
+        this.initializeMidi(midi, true);
         resolve(true);
       });
       reader.readAsArrayBuffer(file);
