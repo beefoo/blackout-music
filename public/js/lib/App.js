@@ -1,3 +1,4 @@
+import AudioPlayer from './AudioPlayer.js';
 import Midi from './Midi.js';
 import MidiSelector from './MidiSelector.js';
 import MidiUI from './MidiUI.js';
@@ -60,16 +61,27 @@ export default class App {
         this.onPointerTriggerNote(pointer);
       },
     });
+    this.sfx = new AudioPlayer({
+      sources: {
+        tap: 'audio/tap.wav',
+        tap2: 'audio/tap2.wav',
+      },
+    });
     this.panels = new PanelManager();
     this.selector.onSelect(false);
     this.loadListeners();
   }
 
   loadListeners() {
-    this.$shareButton = document.getElementById('share-button');
-    this.$shareButton.addEventListener('click', (_event) =>
-      this.updateShareURL(),
-    );
+    const $shareButton = document.getElementById('share-button');
+    $shareButton.addEventListener('click', (_event) => this.updateShareURL());
+
+    const $controlButtons = document.querySelectorAll('.control-button');
+    $controlButtons.forEach(($button) => {
+      $button.addEventListener('click', (_event) => {
+        this.sfx.play('tap2');
+      });
+    });
   }
 
   onChangePage() {
@@ -125,6 +137,7 @@ export default class App {
       if (isActive) {
         $target.classList.remove('active');
         this.midi.activateNote(i, false);
+        this.sfx.play('tap');
       }
     });
   }

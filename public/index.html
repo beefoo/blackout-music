@@ -90,33 +90,49 @@
         </div>
       </main>
       <div class="controls">
-        <button id="toggle-play-button" title="Toggle play">
+        <button
+          id="toggle-play-button"
+          class="control-button"
+          title="Toggle play"
+        >
           <span class="visually-hidden">Toggle play</span>
           <!-- prettier-ignore -->
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="play-icon"><path fill="currentColor" d="M10 20H8V4h2v2h2v3h2v2h2v2h-2v2h-2v3h-2z"/></svg>
           <!-- prettier-ignore -->
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="pause-icon"><path fill="currentColor" d="M10 4H5v16h5zm9 0h-5v16h5z"/></svg>
         </button>
-        <button id="every-other-button" title="Toggle every other note">
+        <button
+          id="every-other-button"
+          class="control-button"
+          title="Toggle every other note"
+        >
           <span class="visually-hidden">Toggle every other note</span>
           <!-- prettier-ignore -->
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" version="1.1" viewBox="0 0 24 24">
             <path d="M2.5,5.9v5h5v-5H2.5ZM6.2,9.6h-2.5v-2.5h2.5v2.5ZM14.5,10.9h-5v-5h5v5ZM7.5,18.1H2.5v-5h5v5ZM21.5,18.1h-5v-5h5v5ZM9.5,13.2v5h5v-5h-5ZM13.2,17h-2.5v-2.5h2.5v2.5ZM16.5,5.9v5h5v-5h-5ZM20.2,9.6h-2.5v-2.5h2.5v2.5Z" fill="currentColor"/>
           </svg>
         </button>
-        <button id="high-low-button" title="Toggle high and low notes">
+        <button
+          id="high-low-button"
+          class="control-button"
+          title="Toggle high and low notes"
+        >
           <span class="visually-hidden">Toggle high and low notes</span>
           <!-- prettier-ignore -->
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" version="1.1" viewBox="0 0 24 24">
             <path d="M2.5,5.9v5h5v-5H2.5ZM6.2,9.6h-2.5v-2.5h2.5v2.5ZM14.5,18.1h-5v-5h5v5ZM7.5,18.1H2.5v-5h5v5ZM21.5,18.1h-5v-5h5v5ZM9.5,5.9v5h5v-5h-5ZM13.2,9.6h-2.5v-2.5h2.5v2.5ZM16.5,5.9v5h5v-5h-5ZM20.2,9.6h-2.5v-2.5h2.5v2.5Z" fill="currentColor"/>
           </svg>
         </button>
-        <button id="randomize-button" title="Toggle notes randomly">
+        <button
+          id="randomize-button"
+          class="control-button"
+          title="Toggle notes randomly"
+        >
           <span class="visually-hidden">Toggle notes randomly</span>
           <!-- prettier-ignore -->
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M8 15h1v2H8v1H7v1H1v-2h6v-1h1zm13 1h1v2h-1v1h-1v1h-1v1h-1v-3h-4v-1h-1v-1h-1v-2h-1v-1h-1v-2H9v-1H8V8H7V7H1V5h7v1h1v2h1v2h1v1h1v2h1v1h1v2h4v-3h1v1h1v1h1z"/><path fill="currentColor" d="M22 5v2h-1v1h-1v1h-1v1h-1V7h-4v1h-1v1h-1V7h1V6h1V5h4V2h1v1h1v1h1v1z"/></svg>
         </button>
-        <button id="reset-button" title="Reset sequence">
+        <button id="reset-button" class="control-button" title="Reset sequence">
           <span class="visually-hidden">Reset</span>
           <!-- prettier-ignore -->
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M16 2h-2v2h2v2H4v2H2v5h2V8h12v2h-2v2h2v-2h2V8h2V6h-2V4h-2zM6 20h2v2h2v-2H8v-2h12v-2h2v-5h-2v5H8v-2h2v-2H8v2H6v2H4v2h2z"/></svg>
@@ -124,7 +140,7 @@
         <button
           id="settings-button"
           title="View settings"
-          class="panel-button"
+          class="panel-button control-button"
           data-panel="settings-panel"
         >
           <span class="visually-hidden">Settings</span>
