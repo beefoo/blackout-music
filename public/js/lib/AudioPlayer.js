@@ -46,8 +46,6 @@ export default class AudioPlayer {
 
     if (!(id in buffers)) return;
 
-    console.log(id);
-
     const buf = buffers[id];
 
     // define defaults and set options if they exist
