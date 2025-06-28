@@ -3,8 +3,9 @@
   "description": "Create new music by erasing old music",
   "scripts": {
     "build-midi": "esbuild node_modules/@tonejs/midi/src/Midi.ts --bundle --outfile=public/js/vendor/Tone-midi.js --format=esm",
-    "start": "node server.js",
-    "build-tone": "esbuild node_modules/tone/build/esm/index.d.ts --bundle --outfile=public/js/vendor/Tone.js --format=esm"
+    "build-tone": "esbuild node_modules/tone/build/esm/index.d.ts --bundle --outfile=public/js/vendor/Tone.js --format=esm",
+    "credits": "node credits.js",
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.21.2",
