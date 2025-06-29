@@ -214,6 +214,47 @@ li {
   animation-delay: 12s;
 }
 
+@media (orientation: portrait) {
+  .header {
+    gap: 6px;
+    padding: 6px 12px;
+    align-items: center;
+  }
+  .header h1 {
+    font-size: 1rem;
+    flex-grow: 1;
+  }
+  .header h2 {
+    display: none;
+  }
+  .header svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+@media (max-height: 600px) {
+  .header {
+    gap: 6px;
+    padding: 3px 12px;
+    align-items: center;
+  }
+  .header h1 {
+    font-size: 1rem;
+    flex-grow: 1;
+  }
+  .header h2 {
+    display: none;
+  }
+  .header button,
+  .header .button {
+    padding: 0 6px;
+  }
+  .header svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
 .main {
   flex-grow: 1;
   display: flex;
@@ -235,6 +276,13 @@ li {
   text-align: center;
   max-width: 100%;
 }
+@media (max-height: 600px) {
+  .selector select,
+  .selector label {
+    font-size: 0.8rem;
+  }
+}
+
 .composition-wrapper {
   flex-grow: 1;
   background-image: linear-gradient(
@@ -367,6 +415,18 @@ body.playing .note.active .cell.highlight {
   height: 30px;
   display: block;
 }
+@media (max-height: 600px) {
+  .pagination label {
+    font-size: 0.8rem;
+  }
+  .pagination button svg {
+    width: 22px;
+    height: 22px;
+  }
+  .composition {
+    bottom: 54px;
+  }
+}
 
 .controls {
   display: flex;
@@ -413,6 +473,30 @@ body.playing .note.active .cell.highlight {
 }
 #forward-button .number {
   right: 8px;
+}
+
+@media (orientation: portrait) {
+  .controls button svg {
+    width: 26px;
+    height: 26px;
+  }
+  #toggle-play-button svg {
+    width: 40px;
+    height: 40px;
+  }
+}
+@media (max-height: 600px) {
+  .controls {
+    padding: 4px 12px;
+  }
+  .controls button svg {
+    width: 22px;
+    height: 22px;
+  }
+  #toggle-play-button svg {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .panel {
@@ -484,6 +568,7 @@ input[type='range'] {
 }
 .radio-fieldset label {
   margin-right: 0.5rem;
+  white-space: nowrap\;;
 }
 .radio-fieldset label input {
   margin-right: 0.2rem;
@@ -493,6 +578,7 @@ input[type='range'] {
   margin: 0 0 0.3rem;
   font-size: 0.8rem;
   color: var(--base-light);
+  line-height: 1;
 }
 .form input[type='text'] {
   width: 100%;
