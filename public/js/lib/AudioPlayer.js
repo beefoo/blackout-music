@@ -3,6 +3,7 @@ export default class AudioPlayer {
     const defaults = {
       audioContext: false,
       debug: false,
+      defaultVolume: 0.2,
       fadeIn: 0,
       fadeOut: 0,
       sources: {}, // key/value pairs of id/url
@@ -41,7 +42,7 @@ export default class AudioPlayer {
   }
 
   play(id, options = {}) {
-    const { fadeIn, fadeOut } = this.options;
+    const { defaultVolume, fadeIn, fadeOut } = this.options;
     const { ctx, buffers } = this;
 
     if (!(id in buffers)) return;
@@ -49,7 +50,7 @@ export default class AudioPlayer {
     const buf = buffers[id];
 
     // define defaults and set options if they exist
-    const volume = 'volume' in options ? options.volume : 1;
+    const volume = 'volume' in options ? options.volume : defaultVolume;
     const gain = this.constructor.volumeToGain(volume);
     const playbackRate = 'playbackRate' in options ? options.playbackRate : 1;
     const dur = buf.duration;
